@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using System.Collections.Generic;
 using Common;
 
 namespace NetworkGame {
@@ -19,7 +20,7 @@ public class NetworkGame : MonoBehaviour {
     Grid grid;
 
     Player player;
-    Enemy[] enemies;
+    List<Enemy> enemies;
     Coord gemPosition;
 
 	// Use this for initialization
@@ -55,6 +56,22 @@ public class NetworkGame : MonoBehaviour {
         }
     }
 
+    /***** SETUP *****/
+
+    void Setup() {
+        grid = new Grid(WIDTH, HEIGHT);
+
+        gemPosition = Coord.RandomCoord(WIDTH, HEIGHT);
+
+        player = new Player(0, 0); // init position?
+        enemies = new List<Enemy>();
+        for (int i=0; i<num_enemies; i++) {
+            enemies.Add(new Enemy(Random.Range(1, WIDTH-1), Random.Range(1, HEIGHT-1),
+                                   /*Random.Range(1.05f, 1.48f)));*/
+                                   1));
+        }
+    }
+
     void IncreaseDifficulty() {
         num_enemies++;
     }
@@ -63,18 +80,7 @@ public class NetworkGame : MonoBehaviour {
         num_enemies = 1;
     }
 
-    void Setup() {
-        grid = new Grid(WIDTH, HEIGHT);
-
-        gemPosition = Coord.RandomCoord(WIDTH, HEIGHT);
-
-        player = new Player(0, 0); // init position?
-        enemies = new Enemy[num_enemies];
-        for (int i=0; i<num_enemies; i++) {
-            enemies[i] = new Enemy(Random.Range(1, WIDTH-1), Random.Range(1, HEIGHT-1),
-                                   Random.Range(0.35f, 0.8f));
-        }
-    }
+    /***** PLAY LOGIC *****/
 
     IEnumerator PlayTurn() {
         while (DirectionUtil.FromInput() == Direction.None) {
@@ -85,11 +91,32 @@ public class NetworkGame : MonoBehaviour {
         foreach (var e in enemies) {
             e.Chase(player.position);
         }
+        RemoveOverlappedEnemies();
     }
+
+    void RemoveOverlappedEnemies() {
+        var enemyPos = new Dictionary<Coord, List<Enemy>>();
+        foreach (var enemy in enemies) {
+            if (!enemyPos.ContainsKey(enemy.position)) {
+                enemyPos[enemy.position] = new List<Enemy>();
+            }
+            enemyPos[enemy.position].Add(enemy);
+        }
+
+        foreach (var unitsOnSameCoord in enemyPos.Values) {
+            if (unitsOnSameCoord.Count > 1) {
+                foreach (var e in unitsOnSameCoord) {
+                    enemies.Remove(e);
+                }
+            }
+        }
+    }
+
+    /***** GAME STATUS *****/
 
     bool PlayerIsDead() {
         foreach (Enemy e in enemies) {
-            if (e.position == player.position) {
+            if (e != null && e.position == player.position) {
                 return true;
             }
         }
@@ -102,6 +129,8 @@ public class NetworkGame : MonoBehaviour {
         }
         return false;
     }
+
+    /***** RENDERING *****/
 
     void RenderBoard() {
         string output = "";
@@ -126,7 +155,7 @@ public class NetworkGame : MonoBehaviour {
         }
 
         foreach (var e in enemies) {
-            if (e.position == pos) {
+            if (e != null && e.position == pos) {
                 return 'O';
             }
         }
@@ -140,6 +169,7 @@ public class NetworkGame : MonoBehaviour {
     void ShowResult() {
         Debug.Log("Survived for " + turns + " turns");
     }
+
 }
 
 public class Network {
@@ -163,6 +193,10 @@ public struct Coord : System.IEquatable<Coord> {
         return new Coord(
                 Random.Range(0, maxX),
                 Random.Range(0, maxY));
+    }
+
+    public override int GetHashCode() {
+        return 1000000*x + y;
     }
 
     public bool Equals(Coord other) {
@@ -236,7 +270,7 @@ public class Enemy : Unit {
     public void Chase(Coord target) {
         curMovement += speed;
 
-        if (curMovement > 1) {
+        if (curMovement >= 1) {
             curMovement -= 1;
             if (target.x > position.x) {
                 position.x++;

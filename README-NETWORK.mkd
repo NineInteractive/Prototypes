@@ -1,0 +1,18 @@
+## Stage 1 (9/6/2016)
+Base gameplay.
+
+## Stage 2
+Here's a goal: get to the gem before the enemies get you.
+
+## Stage 3
+Thinking about using weighted pipes between nodes.
+
+Currently there's no need for the player to strategize because the time isn't ticking against him.
+The enemies are slower than the player, and if we increased the speed of the enemies then we wouldn't be able to solve the game as ...
+
+Actually, stumbled into a new gameplay: if enemy speed is 1, then i can strategize the overlapping coord ahead of time.
+
+Okay, again, it is hard to win this way - once the enemy catches up with your x or y coordinate, it basically
+establishes a line of defense which you cannot get through.
+
+To give a "tick", establish asymmetry - namely the weighted pipes.
