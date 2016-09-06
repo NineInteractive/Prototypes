@@ -7,11 +7,12 @@ namespace NetworkGame {
 
 public class NetworkGame : MonoBehaviour {
 
-    const int NUMBER_OF_ENEMIES = 2;
     const int WIDTH = 10;
     const int HEIGHT = 10;
 
     public Text renderer;
+
+    int num_enemies = 1;
 
     int turns;
 
@@ -19,7 +20,7 @@ public class NetworkGame : MonoBehaviour {
 
     Player player;
     Enemy[] enemies;
-    Coord gem;
+    Coord gemPosition;
 
 	// Use this for initialization
 	void Start () {
@@ -35,28 +36,41 @@ public class NetworkGame : MonoBehaviour {
         // turn
         // check death
         // print
-        Setup();
-        do {
-            Debug.Log(">    Turn " + turns);
+        while (true) {
+            Setup();
+            do {
+                //Debug.Log(">    Turn " + turns);
+                RenderBoard();
+                yield return StartCoroutine(PlayTurn());
+                turns++;
+                yield return null;
+            } while (!(PlayerIsDead() || WonLevel()));
             RenderBoard();
-            yield return StartCoroutine(PlayTurn());
-            turns++;
-            yield return null;
-        } while (!PlayerIsDead());
-        RenderBoard();
-        ShowResult();
+            ShowResult();
+            if (WonLevel()) {
+                IncreaseDifficulty();
+            } else {
+                ResetDifficulty();
+            }
+        }
+    }
+
+    void IncreaseDifficulty() {
+        num_enemies++;
+    }
+
+    void ResetDifficulty() {
+        num_enemies = 1;
     }
 
     void Setup() {
-        turns = -1; // if you die immediately, then turn of death = 0
-
         grid = new Grid(WIDTH, HEIGHT);
 
-        gem = Coord.RandomCoord(WIDTH, HEIGHT);
+        gemPosition = Coord.RandomCoord(WIDTH, HEIGHT);
 
         player = new Player(0, 0); // init position?
-        enemies = new Enemy[NUMBER_OF_ENEMIES];
-        for (int i=0; i<NUMBER_OF_ENEMIES; i++) {
+        enemies = new Enemy[num_enemies];
+        for (int i=0; i<num_enemies; i++) {
             enemies[i] = new Enemy(Random.Range(1, WIDTH-1), Random.Range(1, HEIGHT-1),
                                    Random.Range(0.35f, 0.8f));
         }
@@ -78,6 +92,13 @@ public class NetworkGame : MonoBehaviour {
             if (e.position == player.position) {
                 return true;
             }
+        }
+        return false;
+    }
+
+    bool WonLevel() {
+        if (!PlayerIsDead() && (player.position == gemPosition)) {
+            return true;
         }
         return false;
     }
@@ -108,6 +129,10 @@ public class NetworkGame : MonoBehaviour {
             if (e.position == pos) {
                 return 'O';
             }
+        }
+
+        if (pos == gemPosition) {
+            return '♢';
         }
         return '+';
     }
