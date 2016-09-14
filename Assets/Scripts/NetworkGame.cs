@@ -10,6 +10,8 @@ public class NetworkGame : MonoBehaviour {
 
     const int WIDTH = 10;
     const int HEIGHT = 10;
+    const int MIN_LENGTH = 1;
+    const int MAX_LENGTH = 8;
 
     public Text renderer;
 
@@ -17,7 +19,9 @@ public class NetworkGame : MonoBehaviour {
 
     int turns;
 
-    Grid grid;
+    /*Grid grid;*/
+    GraphMatrix graph;
+    GraphRenderer graphRenderer;
 
     Player player;
     List<Enemy> enemies;
@@ -59,8 +63,7 @@ public class NetworkGame : MonoBehaviour {
     /***** SETUP *****/
 
     void Setup() {
-        grid = new Grid(WIDTH, HEIGHT);
-
+        // possible to be run multiple times
         gemPosition = Coord.RandomCoord(WIDTH, HEIGHT);
 
         player = new Player(0, 0); // init position?
@@ -70,6 +73,21 @@ public class NetworkGame : MonoBehaviour {
                                    /*Random.Range(1.05f, 1.48f)));*/
                                    1));
         }
+
+        // setup cost
+        graph = new GraphMatrix();
+        for (int x=0; x<WIDTH; x++) {
+            for (int y=0; y<HEIGHT; y++) {
+                // north
+                graph.SetLength(new Edge(x, y, x+1, y), Random.Range(MIN_LENGTH, MAX_LENGTH));
+                // east
+                graph.SetLength(new Edge(x, y, x, y+1), Random.Range(MIN_LENGTH, MAX_LENGTH));
+            }
+        }
+
+        // render
+        graphRenderer = new GraphRenderer();
+        graphRenderer.RenderGraph(graph);
     }
 
     void IncreaseDifficulty() {
@@ -292,12 +310,105 @@ public class Enemy : Unit {
     }
 }
 
+/*
+public class Edge {
+    public float length;
+    public Coord vertex1;
+    public Coord vertex2;
+
+    public HashSet<Coord> vertices;
+}
+*/
+
+// Every node has a node id
+//
+
+public struct Edge {
+    public int x1;
+    public int y1;
+    public int x2;
+    public int y2;
+
+    public Edge(int x1, int y1, int x2, int y2) {
+        this.x1 = x1;
+        this.y1 = y1;
+        this.x2 = x2;
+        this.y2 = y2;
+    }
+
+    public Edge Reverse() {
+        return new Edge(x2, y2, x1, y1);
+    }
+
+    public Orientation orientation {
+        get {
+            // TODO: this is just a hack
+            if (x1 != x2) {
+                return Orientation.Vertical;
+            } else {
+                return Orientation.Horizontal;
+            }
+        }
+    }
+}
+
+public class GraphMatrix {
+    public const float NO_CONNECTION = -1;
+
+    public readonly Dictionary<Edge, float> lengthBetweenVertices = new Dictionary<Edge, float>();
+
+    public float GetLength(Edge edge) {
+        return lengthBetweenVertices[edge];
+    }
+
+    public void SetLength(Edge edge, float length) {
+        lengthBetweenVertices[edge] = length;
+        lengthBetweenVertices[edge.Reverse()] = length;
+    }
+
+    public int Count {
+        get {
+            return lengthBetweenVertices.Count;
+        }
+    }
+}
+
+public class GraphRenderer {
+
+    const float LINE_WIDTH_SCALE = 0.1f;
+    const float LINE_LENGTH_SCALE = 5f;
+
+    public Dictionary<Edge, RectRenderer> edgeRendererDict;
+
+    public void RenderGraph(GraphMatrix mat) {
+        edgeRendererDict = new Dictionary<Edge, RectRenderer>();
+        foreach (var pair in mat.lengthBetweenVertices) {
+            // draw edge
+            var len = pair.Value;
+            var edge = pair.Key;
+
+            // approx
+            var boardCenter = new Vector2(5, 5);
+
+            Vector2 center = (new Vector2((edge.x1+edge.x2)/2f, (edge.y1+edge.y2)/2f)-boardCenter)*LINE_LENGTH_SCALE;
+            float length = LINE_LENGTH_SCALE; // only connected to adjacent vertices
+            float width = len * LINE_WIDTH_SCALE;
+            float angle = edge.orientation == Orientation.Vertical ? 0 : 90;
+
+            ShapeGOFactory.InstantiateShape(new RectProperty(
+                        center: center, height: length, width: width, angle: angle, color: Color.white
+            ));
+        }
+    }
+}
+
 public class Grid {
 
     public int width;
     public int height;
 
     Coord[,] coords;
+    Edge[,] edges; // width-1, height-1
 
     public Grid(int width, int height) {
         this.width = width;
@@ -310,6 +421,16 @@ public class Grid {
                 coords[x, y] = new Coord(x, y);
             }
         }
+        // make horizontal edges
+        // make vertical edges
+        // look them up by the set of coords
+
     }
+
+    /*
+    public Edge EdgeBetween(Coord c1, Coord c2) {
+        return new Edge;
+    }
+    */
 }
 }

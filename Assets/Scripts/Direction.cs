@@ -22,4 +22,8 @@ namespace Common {
             return Direction.None;
         }
     }
+
+    public enum Orientation {
+        Vertical, Horizontal
+    }
 }
