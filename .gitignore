@@ -38,4 +38,5 @@ sysinfo.txt
 /Assets/Standard Assets/
 
 # Packages
-/Assets/PureShapes/
+/Assets/PureShapes
+/Assets/UnityTestTools

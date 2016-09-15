@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Common {
+namespace Nine {
     public enum Direction {
         None, Up, Right, Down, Left
     }
