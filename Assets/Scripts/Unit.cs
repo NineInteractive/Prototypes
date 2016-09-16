@@ -35,13 +35,14 @@ public class Unit {
         if (origin == destination) return;
 
         /** Calculate Displacement for Current Time Unit **/
-        var edge = Edge.EdgeForPosAndDir(position, direction);
+        var edge = new Edge(origin, destination);
         var len = graph.GetLength(edge);
         var displacement = deltaTime * speed / len * SPEED_MULTIPLIER;
 
         /** Check Destination Arrival: If True, set origin = destination and pass **/
         if (Vector2.Distance(destination.ToVector(), position) < displacement) {
             origin = destination;
+            position = destination.ToVector();
             return;
         }
 
@@ -113,7 +114,6 @@ public class Enemy : Unit {
         if (RestingAtVertex()) {
             destination = FindNextDestination(origin, target);
         }
-        Debug.Log(target + " " + position);
         Move(graph, deltaTime);
     }
 }

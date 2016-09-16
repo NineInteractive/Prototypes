@@ -24,7 +24,7 @@ public struct Coord : System.IEquatable<Coord> {
     }
 
     public Coord MovedBy(int dx, int dy) {
-        return new Coord(x+dx, x+dy);
+        return new Coord(x+dx, y+dy);
     }
 
     /***** PUBLIC: IEquatable *****/
@@ -52,34 +52,6 @@ public struct Coord : System.IEquatable<Coord> {
 public struct Edge {
     public Coord p1;
     public Coord p2;
-
-
-    /***** PUBLIC: STATIC *****/
-    public static Edge EdgeForPosAndDir(Vector2 position, Direction dir) {
-        var x1 = (int)Mathf.Floor(position.x);
-        var x2 = (int)Mathf.Ceil(position.x);
-        var y1 = (int)Mathf.Floor(position.y);
-        var y2 = (int)Mathf.Ceil(position.y);
-        Debug.Log(string.Format("Edge Vals: {0} {1} {2} {3}", x1, y1, x2, y2));
-
-        /* take care of cases where pos lies on a vertex */
-        switch (dir) {
-            case Direction.Up:
-                y2 = y1 + 1;
-                break;
-            case Direction.Down:
-                y1 = y2 - 1;
-                break;
-            case Direction.Left:
-                x1 = x2 - 1;
-                break;
-            case Direction.Right:
-                x2 = x1 + 1;
-                break;
-        }
-        return new Edge(x1, y1, x2, y2);
-    }
-
 
     /***** INITIALIZER *****/
     public Edge(Coord p1, Coord p2) {
