@@ -12,11 +12,16 @@ public class UnitRenderer : MonoBehaviour {
 
     void Start() {
         var color = Color.blue;
+        var width = 0.2f;
+        var height = 0.2f;
+        var angle = 0f;
         if (unit is Player) {
-            color = Color.red;
+            color = Color.green;
+            height = 0.3f;
+            angle = 22.5f;
         }
 
-        shapeRenderer = ShapeGOFactory.InstantiateRect(new RectProperty(width: 0.2f, height: 0.2f, color: color, layer: -1));
+        shapeRenderer = ShapeGOFactory.InstantiateRect(new RectProperty(width: width, height: height, color: color, angle: angle, layer: -2));
     }
 
     void Update() {

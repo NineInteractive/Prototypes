@@ -10,9 +10,9 @@ public class NetworkGame : MonoBehaviour {
 
     const int WIDTH = 8;
     const int HEIGHT = 8;
-    const int MIN_LENGTH = 1;
-    const int MAX_LENGTH = 8;
     const float CAPTURE_DISTANCE = 0.05f;
+
+    static int[] LENGTHS = {2, 8, 32, 500};
 
     public Text renderer;
 
@@ -63,6 +63,10 @@ public class NetworkGame : MonoBehaviour {
 
     /***** SETUP *****/
 
+    int RandomLength() {
+        return LENGTHS[Random.Range(0, LENGTHS.Length)];
+    }
+
     void Setup() {
         /** Reset: if there are any renderers in the scene, destroy them **/
         foreach (var ur in GameObject.FindObjectsOfType<UnitRenderer>()) {
@@ -82,15 +86,16 @@ public class NetworkGame : MonoBehaviour {
                     center:gemPosition.ToVector(),
                     width: 0.2f,
                     height: 0.2f,
-                    color: Color.green,
+                    color: Color.red,
+                    angle: 45,
                     layer: -2
                 ));
 
         /** Create Units **/
-        player = new Player(Coord.RandomCoord(WIDTH, HEIGHT, occupied, true), 1); // init position?
+        player = new Player(Coord.RandomCoord(WIDTH, HEIGHT, occupied, true), 1.5f); // init position?
         enemies = new List<Enemy>();
         for (int i=0; i<num_enemies; i++) {
-            var ene = new Enemy(Coord.RandomCoord(WIDTH, HEIGHT, occupied, true), Random.Range(1.05f, 1.48f));
+            var ene = new Enemy(Coord.RandomCoord(WIDTH, HEIGHT, occupied, true), Random.Range(7f, 10f));
             enemies.Add(ene);
         }
 
@@ -105,18 +110,18 @@ public class NetworkGame : MonoBehaviour {
         for (int x=0; x<WIDTH; x++) {
             for (int y=0; y<HEIGHT; y++) {
                 // north
-                graph.SetLength(new Edge(x, y, x+1, y), Random.Range(MIN_LENGTH, MAX_LENGTH));
+                graph.SetLength(new Edge(x, y, x+1, y), RandomLength());
                 // east
-                graph.SetLength(new Edge(x, y, x, y+1), Random.Range(MIN_LENGTH, MAX_LENGTH));
+                graph.SetLength(new Edge(x, y, x, y+1), RandomLength());
             }
         }
 
         for (int x=0; x<WIDTH; x++) {
-            graph.SetLength(new Edge(x, HEIGHT, x+1, HEIGHT), Random.Range(MIN_LENGTH, MAX_LENGTH));
+            graph.SetLength(new Edge(x, HEIGHT, x+1, HEIGHT), RandomLength());
         }
 
         for (int y=0; y<HEIGHT; y++) {
-            graph.SetLength(new Edge(WIDTH, y, WIDTH, y+1), Random.Range(MIN_LENGTH, MAX_LENGTH));
+            graph.SetLength(new Edge(WIDTH, y, WIDTH, y+1), RandomLength());
         }
 
 
@@ -266,7 +271,7 @@ public class GraphMatrix {
 
 public class GraphRenderer {
 
-    const float LINE_WIDTH_SCALE = 0.1f;
+    const float LINE_WIDTH_SCALE = 0.3f;
     const float LINE_LENGTH_SCALE = 1f;
 
     public Dictionary<Edge, RectRenderer> edgeRendererDict;
@@ -280,7 +285,7 @@ public class GraphRenderer {
 
             Vector2 center = edge.Midpoint()*LINE_LENGTH_SCALE;
             float length = LINE_LENGTH_SCALE; // only connected to adjacent vertices
-            float width = len * LINE_WIDTH_SCALE;
+            float width = LINE_WIDTH_SCALE / len;
             float angle = edge.orientation == Orientation.Vertical ? 90 : 0;
 
             ShapeGOFactory.InstantiateShape(new RectProperty(
