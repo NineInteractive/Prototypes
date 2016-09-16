@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace Nine {
 
@@ -11,7 +12,21 @@ public struct Coord : System.IEquatable<Coord> {
         this.y = y;
     }
 
-    public Coord(Vector2 v) : this((int)v.x, (int)v.y) { }
+    public Coord(float x, float y) {
+        this.x = (int)x;
+        this.y = (int)y;
+    }
+
+    public Coord(Vector2 v) : this(v.x, v.y) { }
+
+    public static Coord RandomCoord(int maxX, int maxY, ICollection<Coord> exclude, bool addToCollection=false) {
+        var c = RandomCoord(maxX, maxY);
+        while (exclude.Contains(c)) {
+            c = RandomCoord(maxX, maxY);
+        }
+        if (addToCollection) exclude.Add(c);
+        return c;
+    }
 
     public static Coord RandomCoord(int maxX, int maxY) {
         return new Coord(

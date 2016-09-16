@@ -5,7 +5,7 @@ using Nine;
 namespace NetworkGame {
 
 public class Unit {
-    const float SPEED_MULTIPLIER = 5;
+    const float SPEED_MULTIPLIER = 9;
     const float VERTEX_MARGIN = 0.01f;
 
     public Vector2 position;
@@ -15,10 +15,12 @@ public class Unit {
     protected Coord origin;
     protected Coord destination;
 
-    public Unit(float x, float y, float speed) : this(new Vector2(x, y), speed) { }
+    public Unit(float x, float y, float speed) : this(new Coord(x, y), speed) { }
 
-    public Unit(Vector2 v, float speed) {
-        origin = new Coord(v);
+    public Unit(Vector2 v, float speed) : this(new Coord(v), speed) { }
+
+    public Unit(Coord c, float speed) {
+        origin = c;
         destination = origin;
         position = origin.ToVector();
         this.speed = speed;
@@ -106,6 +108,7 @@ public class Unit {
 public class Player : Unit {
     public Player(float x, float y, float speed): base(x, y, speed) {}
     public Player(Vector2 c, float speed): base(c, speed) {}
+    public Player(Coord c, float speed) : base (c, speed) {}
 
     public void MoveToward(Direction dir) {
         destination = FindNextDestination(origin, dir);
@@ -117,6 +120,7 @@ public class Enemy : Unit {
 
     public Enemy(float x, float y, float speed): base(x, y, speed) {}
     public Enemy(Vector2 c, float speed): base(c, speed) {}
+    public Enemy(Coord c, float speed) : base (c, speed) {}
 
     public void Chase(Vector2 target, GraphMatrix graph, float deltaTime) {
         if (RestingAtVertex()) {

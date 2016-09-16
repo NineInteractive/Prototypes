@@ -72,8 +72,11 @@ public class NetworkGame : MonoBehaviour {
             Destroy(ur.gameObject);
         }
 
+        var occupied = new HashSet<Coord>();
+
         /** Create Gem: possible to be run multiple times **/
-        gemPosition = Coord.RandomCoord(WIDTH-1, HEIGHT-1).MovedBy(1, 1);
+        gemPosition = Coord.RandomCoord(WIDTH, HEIGHT, occupied, true);
+
         ShapeGOFactory.InstantiateRect(
                 new RectProperty(
                     center:gemPosition.ToVector(),
@@ -84,11 +87,11 @@ public class NetworkGame : MonoBehaviour {
                 ));
 
         /** Create Units **/
-        player = new Player(0, 0, 1); // init position?
+        player = new Player(Coord.RandomCoord(WIDTH, HEIGHT, occupied, true), 1); // init position?
         enemies = new List<Enemy>();
         for (int i=0; i<num_enemies; i++) {
-            enemies.Add(new Enemy(Random.Range(1, WIDTH-1), Random.Range(1, HEIGHT-1),
-                                   Random.Range(1.05f, 1.48f)));
+            var ene = new Enemy(Coord.RandomCoord(WIDTH, HEIGHT, occupied, true), Random.Range(1.05f, 1.48f));
+            enemies.Add(ene);
         }
 
         /** Create Renderers **/
