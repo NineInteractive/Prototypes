@@ -12,55 +12,95 @@ public class Unit {
     public Direction direction;
     public float speed;
 
+    protected Coord origin;
+    protected Coord destination;
+
     public Unit(float x, float y, float speed) : this(new Vector2(x, y), speed) { }
 
     public Unit(Vector2 v, float speed) {
-        position = v;
+        origin = new Coord(v);
+        destination = origin;
+        position = origin.ToVector();
         this.speed = speed;
     }
 
-    public bool AtVertex() {
-        var dist = Vector2.Distance(position, NearestVertex());
-        Debug.Log(dist);
-        return dist < VERTEX_MARGIN;
+    public bool RestingAtVertex() {
+        return origin == destination;
     }
 
+    /*
+     * Assumes direction has been set
+     */
     public void Move(GraphMatrix graph, float deltaTime) {
+        if (origin == destination) return;
+
+        /** Calculate Displacement for Current Time Unit **/
         var edge = Edge.EdgeForPosAndDir(position, direction);
         var len = graph.GetLength(edge);
-        if (len == 0) return;
         var displacement = deltaTime * speed / len * SPEED_MULTIPLIER;
 
-        switch (direction) {
-            case Direction.Up:
-                position.y = Mathf.Min((int)position.y + 1, position.y + displacement);
-                break;
-            case Direction.Right:
-                position.x = Mathf.Min((int)position.x + 1, position.x + displacement);
-                break;
-            case Direction.Down:
-                position.y = Mathf.Max((int)position.y - 1, position.y - displacement);
-                break;
-            case Direction.Left:
-                position.x = Mathf.Max((int)position.x - 1, position.x - displacement);
-                break;
-            default:
-                break;
+        /** Check Destination Arrival: If True, set origin = destination and pass **/
+        if (Vector2.Distance(destination.ToVector(), position) < displacement) {
+            origin = destination;
+            return;
         }
+
+        /** Ready to Move **/
+        position += (destination.ToVector()-origin.ToVector()).normalized * displacement;
     }
 
-    Vector2 NearestVertex() {
-        return new Vector2(Mathf.Round(position.x), Mathf.Round(position.y));
+    /***** PROTECTED: METHOD ***/
+
+    protected static Coord FindNextDestination(Coord curr, Vector2 target) {
+        Direction dir = Direction.None;
+        if (target.x > curr.x) {
+            dir = Direction.Right;
+        } else if (target.x < curr.x) {
+            dir = Direction.Left;
+        } else if (target.y > curr.y) {
+            dir = Direction.Up;
+        } else if (target.y < curr.y) {
+            dir = Direction.Down;
+        }
+        return FindNextDestination(curr, dir);
+    }
+
+    protected static Coord FindNextDestination(Coord curr, Direction dir) {
+        Coord next;
+
+        switch(dir) {
+            case Direction.Up:
+                next = curr.MovedBy(0, 1);
+                break;
+            case Direction.Down:
+                next = curr.MovedBy(0, -1);
+                break;
+            case Direction.Left:
+                next = curr.MovedBy(-1, 0);
+                break;
+            case Direction.Right:
+                next = curr.MovedBy(1, 0);
+                break;
+            default:
+                next = curr;
+                break;
+        }
+        return next;
     }
 
     public override string ToString() {
-        return string.Format("{0}: Pos={1} Dir={2} Speed={3}", GetType(), position, direction, speed);
+        return string.Format("{0}: Pos={1} Origin={2} Dest={3} Speed={4}",
+                GetType(), position, origin, destination, speed);
     }
 }
 
 public class Player : Unit {
     public Player(float x, float y, float speed): base(x, y, speed) {}
     public Player(Vector2 c, float speed): base(c, speed) {}
+
+    public void MoveToward(Direction dir) {
+        destination = FindNextDestination(origin, dir);
+    }
 }
 
 public class Enemy : Unit {
@@ -70,28 +110,11 @@ public class Enemy : Unit {
     public Enemy(Vector2 c, float speed): base(c, speed) {}
 
     public void Chase(Vector2 target, GraphMatrix graph, float deltaTime) {
-        if (AtVertex()) {
-            direction = FaceTarget(target);
-            Debug.Log("!At vertex: " + this);
+        if (RestingAtVertex()) {
+            destination = FindNextDestination(origin, target);
         }
         Debug.Log(target + " " + position);
         Move(graph, deltaTime);
-    }
-
-    Direction FaceTarget(Vector2 target) {
-        if (target.x > position.x) {
-            return Direction.Right;
-        }
-        if (target.x < position.x) {
-            return Direction.Left;
-        }
-        if (target.y > position.y) {
-            return Direction.Up;
-        }
-        if (target.y < position.y) {
-            return Direction.Down;
-        }
-        return Direction.None;
     }
 }
 }

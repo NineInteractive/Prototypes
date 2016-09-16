@@ -128,11 +128,11 @@ public class NetworkGame : MonoBehaviour {
         }
 
         /** Move Player **/
-        if (player.AtVertex()) {
+        if (player.RestingAtVertex()) {
 			while (DirectionUtil.FromInput() == Direction.None) {
 				yield return null;
 			}
-			player.direction = DirectionUtil.FromInput();
+            player.MoveToward(DirectionUtil.FromInput());
         }
         player.Move(graph, Time.deltaTime);
     }
@@ -272,7 +272,7 @@ public class GraphRenderer {
             var len = pair.Value;
             var edge = pair.Key;
 
-            Vector2 center = (new Vector2((edge.x1+edge.x2)/2f, (edge.y1+edge.y2)/2f))*LINE_LENGTH_SCALE;
+            Vector2 center = edge.Midpoint()*LINE_LENGTH_SCALE;
             float length = LINE_LENGTH_SCALE; // only connected to adjacent vertices
             float width = len * LINE_WIDTH_SCALE;
             float angle = edge.orientation == Orientation.Vertical ? 90 : 0;
