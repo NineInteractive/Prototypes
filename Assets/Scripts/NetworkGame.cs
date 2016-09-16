@@ -9,10 +9,14 @@ namespace NetworkGame {
 public class NetworkGame : MonoBehaviour {
 
     const int WIDTH = 8;
-    const int HEIGHT = 8;
+    const int HEIGHT = 2;
     const float CAPTURE_DISTANCE = 0.05f;
 
-    static int[] LENGTHS = {2, 8, 32, 500};
+    const float PLAYER_SPEED = 1f;
+    const float ENEMY_MIN_SPEED = 0.5f;
+    const float ENEMY_MAX_SPEED = 0.5f;
+
+    static int[] LENGTHS = {1, 1, 1, 4};
 
     public Text renderer;
 
@@ -79,7 +83,7 @@ public class NetworkGame : MonoBehaviour {
         var occupied = new HashSet<Coord>();
 
         /** Create Gem: possible to be run multiple times **/
-        gemPosition = Coord.RandomCoord(WIDTH, HEIGHT, occupied, true);
+        gemPosition = Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true);
 
         ShapeGOFactory.InstantiateRect(
                 new RectProperty(
@@ -92,10 +96,11 @@ public class NetworkGame : MonoBehaviour {
                 ));
 
         /** Create Units **/
-        player = new Player(Coord.RandomCoord(WIDTH, HEIGHT, occupied, true), 1.5f); // init position?
+        player = new Player(Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true), PLAYER_SPEED); // init position?
         enemies = new List<Enemy>();
         for (int i=0; i<num_enemies; i++) {
-            var ene = new Enemy(Coord.RandomCoord(WIDTH, HEIGHT, occupied, true), Random.Range(7f, 10f));
+            var ene = new Enemy(Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true),
+                    Random.Range(ENEMY_MIN_SPEED, ENEMY_MAX_SPEED));
             enemies.Add(ene);
         }
 
@@ -185,6 +190,12 @@ public class NetworkGame : MonoBehaviour {
                 return true;
             }
         }
+
+        /*HAX*/
+        if (num_enemies+3 >= (WIDTH+1) * (HEIGHT+1)) {
+            return true;
+        }
+
         return false;
     }
 
@@ -271,7 +282,7 @@ public class GraphMatrix {
 
 public class GraphRenderer {
 
-    const float LINE_WIDTH_SCALE = 0.3f;
+    const float LINE_WIDTH_SCALE = 0.15f;
     const float LINE_LENGTH_SCALE = 1f;
 
     public Dictionary<Edge, RectRenderer> edgeRendererDict;
