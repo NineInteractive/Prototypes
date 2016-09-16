@@ -128,6 +128,7 @@ public class NetworkGame : MonoBehaviour {
 
     void ResetDifficulty() {
         num_enemies = 1;
+        turns = 0;
     }
 
 

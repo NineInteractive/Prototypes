@@ -54,15 +54,23 @@ public class Unit {
 
     protected static Coord FindNextDestination(Coord curr, Vector2 target) {
         Direction dir = Direction.None;
-        if (target.x > curr.x) {
-            dir = Direction.Right;
-        } else if (target.x < curr.x) {
-            dir = Direction.Left;
-        } else if (target.y > curr.y) {
-            dir = Direction.Up;
-        } else if (target.y < curr.y) {
-            dir = Direction.Down;
+        var dy = target.y - curr.y;
+        var dx = target.x - curr.x;
+
+        if (Mathf.Abs(dy) > Mathf.Abs(dx)) {
+            if (dy < 0) {
+                dir = Direction.Down;
+            } else {
+                dir = Direction.Up;
+            }
+        } else {
+            if (dx < 0) {
+                dir = Direction.Left;
+            } else {
+                dir = Direction.Right;
+            }
         }
+
         return FindNextDestination(curr, dir);
     }
 
