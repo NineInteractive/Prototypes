@@ -10,8 +10,13 @@ public class UnitRenderer : MonoBehaviour {
 
     RectRenderer shapeRenderer;
 
-    void Awake() {
-        shapeRenderer = ShapeGOFactory.InstantiateRect(new RectProperty(width: 0.2f, height: 0.2f, color: Color.blue));
+    void Start() {
+        var color = Color.blue;
+        if (unit is Player) {
+            color = Color.red;
+        }
+
+        shapeRenderer = ShapeGOFactory.InstantiateRect(new RectProperty(width: 0.2f, height: 0.2f, color: color, layer: -1));
     }
 
     void Update() {

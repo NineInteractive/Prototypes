@@ -29,7 +29,7 @@ public class NetworkGame : MonoBehaviour {
     Coord gemPosition;
 
 	// Use this for initialization
-	void Start () {
+	void Awake () {
         StartCoroutine(Play());
 	}
 
@@ -222,14 +222,6 @@ public class NetworkGame : MonoBehaviour {
         Debug.Log("Survived for " + turns + " turns");
     }
 
-}
-
-public class Network {
-    public void Blah () {
-        // coord networked
-        // draw network
-        // take turns
-    }
 }
 
 
