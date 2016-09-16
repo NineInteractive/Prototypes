@@ -8,8 +8,8 @@ namespace NetworkGame {
 
 public class NetworkGame : MonoBehaviour {
 
-    const int WIDTH = 3;
-    const int HEIGHT = 3;
+    const int WIDTH = 8;
+    const int HEIGHT = 8;
     const int MIN_LENGTH = 1;
     const int MAX_LENGTH = 8;
     const float CAPTURE_DISTANCE = 0.05f;
@@ -65,12 +65,23 @@ public class NetworkGame : MonoBehaviour {
 
     void Setup() {
         /** Reset: if there are any renderers in the scene, destroy them **/
-        foreach (var ur in GetComponents<UnitRenderer>()) {
+        foreach (var ur in GameObject.FindObjectsOfType<UnitRenderer>()) {
+            Destroy(ur.gameObject);
+        }
+        foreach (var ur in GameObject.FindObjectsOfType<RectRenderer>()) {
             Destroy(ur.gameObject);
         }
 
         /** Create Gem: possible to be run multiple times **/
-        gemPosition = Coord.RandomCoord(WIDTH, HEIGHT);
+        gemPosition = Coord.RandomCoord(WIDTH-1, HEIGHT-1).MovedBy(1, 1);
+        ShapeGOFactory.InstantiateRect(
+                new RectProperty(
+                    center:gemPosition.ToVector(),
+                    width: 0.2f,
+                    height: 0.2f,
+                    color: Color.green,
+                    layer: -2
+                ));
 
         /** Create Units **/
         player = new Player(0, 0, 1); // init position?
@@ -169,7 +180,6 @@ public class NetworkGame : MonoBehaviour {
     }
 
     bool WonLevel() {
-        return false;
         if (!PlayerIsDead() && Approx(player.position, gemPosition.ToVector())) {
             return true;
         }
