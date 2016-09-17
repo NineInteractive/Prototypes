@@ -9,18 +9,21 @@ namespace NetworkGame {
 public class NetworkGame : MonoBehaviour {
 
     const int WIDTH = 8;
-    const int HEIGHT = 2;
+    const int HEIGHT = 8;
     const float CAPTURE_DISTANCE = 0.05f;
 
     const float PLAYER_SPEED = 1f;
     const float ENEMY_MIN_SPEED = 0.5f;
     const float ENEMY_MAX_SPEED = 0.5f;
 
+    const int START_ENEMY_COUNT = 30;
+    const int MORE_ENEMIES_PER_STAGE = 2;
+
     static int[] LENGTHS = {1, 1, 1, 4};
 
     public Text renderer;
 
-    int num_enemies = 1;
+    int num_enemies = START_ENEMY_COUNT;
 
     int turns;
 
@@ -52,7 +55,6 @@ public class NetworkGame : MonoBehaviour {
                 //Debug.Log(">    Turn " + turns);
                 //RenderBoard();
                 yield return StartCoroutine(PlayTurn());
-                turns++;
                 yield return null;
             } while (!(PlayerIsDead() || WonLevel()));
             //RenderBoard();
@@ -136,11 +138,11 @@ public class NetworkGame : MonoBehaviour {
     }
 
     void IncreaseDifficulty() {
-        num_enemies++;
+        num_enemies += MORE_ENEMIES_PER_STAGE;
     }
 
     void ResetDifficulty() {
-        num_enemies = 1;
+        num_enemies = START_ENEMY_COUNT;
         turns = 0;
     }
 
@@ -157,6 +159,7 @@ public class NetworkGame : MonoBehaviour {
 			while (DirectionUtil.FromInput() == Direction.None) {
 				yield return null;
 			}
+            turns++;
             player.MoveToward(DirectionUtil.FromInput());
         }
         player.Move(graph, Time.deltaTime);

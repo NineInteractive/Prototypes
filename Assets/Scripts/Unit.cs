@@ -116,17 +116,30 @@ public class Player : Unit {
 }
 
 public class Enemy : Unit {
+    const float DETECTION_DISTANCE = 2.51f;
+
     public float speed;
+    public bool active;
 
     public Enemy(float x, float y, float speed): base(x, y, speed) {}
     public Enemy(Vector2 c, float speed): base(c, speed) {}
     public Enemy(Coord c, float speed) : base (c, speed) {}
 
     public void Chase(Vector2 target, GraphMatrix graph, float deltaTime) {
-        if (RestingAtVertex()) {
-            destination = FindNextDestination(origin, target);
+        // if active, keep chasing
+        // if unactive, check if it needs to be active
+        if (active) {
+            if (RestingAtVertex()) {
+                destination = FindNextDestination(origin, target);
+            }
+            Move(graph, deltaTime);
+        } else if (FoundPlayer(target)) {
+            active = true;
         }
-        Move(graph, deltaTime);
+    }
+
+    bool FoundPlayer(Vector2 target) {
+        return Vector2.Distance(target, position) < DETECTION_DISTANCE;
     }
 }
 }
