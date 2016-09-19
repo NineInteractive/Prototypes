@@ -130,7 +130,7 @@ public class Player : Unit {
 }
 
 public class Enemy : Unit {
-    const float DETECTION_DISTANCE = 2.51f;
+    const float DETECTION_DISTANCE = 1.01f;
 
     public float speed;
     public bool active;

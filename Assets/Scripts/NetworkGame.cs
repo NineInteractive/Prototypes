@@ -16,7 +16,7 @@ public class NetworkGame : MonoBehaviour {
     const float ENEMY_MIN_SPEED = 0.5f;
     const float ENEMY_MAX_SPEED = 0.5f;
 
-    const int START_ENEMY_COUNT = 30;
+    const int START_ENEMY_COUNT = 10;
     const int MORE_ENEMIES_PER_STAGE = 2;
 
     static int[] LENGTHS = {1, 1, 1, 4};
@@ -109,7 +109,7 @@ public class NetworkGame : MonoBehaviour {
 
 
         /** Create Gem: possible to be run multiple times **/
-        var gemPosition = Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true);
+        gemPosition = Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true);
 
         ShapeGOFactory.InstantiateRect(
                 new RectProperty(
