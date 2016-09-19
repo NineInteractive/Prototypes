@@ -5,16 +5,21 @@ using Nine;
 namespace NetworkGame {
 
 public class Unit {
+    /***** CONSTS *****/
     const float SPEED_MULTIPLIER = 9;
     const float VERTEX_MARGIN = 0.01f;
 
+
+    /***** PUBLIC: VARIABLES ***/
     public Vector2 position;
     public Direction direction;
     public float speed;
 
-    protected Coord origin;
-    protected Coord destination;
+    public Coord origin;
+    public Coord destination;
 
+
+    /***** PUBLIC: INITIALIZER ***/
     public Unit(float x, float y, float speed) : this(new Coord(x, y), speed) { }
 
     public Unit(Vector2 v, float speed) : this(new Coord(v), speed) { }
@@ -26,14 +31,17 @@ public class Unit {
         this.speed = speed;
     }
 
+
+    /***** PUBLIC: METHOD ***/
     public bool RestingAtVertex() {
         return origin == destination;
     }
 
-    /*
-     * Assumes direction has been set
-     */
     public void Move(GraphMatrix graph, float deltaTime) {
+        /*
+         * Assumes direction has been set
+         */
+
         if (origin == destination) return;
 
         /** Calculate Displacement for Current Time Unit **/
@@ -50,6 +58,12 @@ public class Unit {
 
         /** Ready to Move **/
         position += (destination.ToVector()-origin.ToVector()).normalized * displacement;
+    }
+
+    public Edge edge {
+        get {
+            return new Edge(origin, destination);
+        }
     }
 
     /***** PROTECTED: METHOD ***/
@@ -125,21 +139,38 @@ public class Enemy : Unit {
     public Enemy(Vector2 c, float speed): base(c, speed) {}
     public Enemy(Coord c, float speed) : base (c, speed) {}
 
-    public void Chase(Vector2 target, GraphMatrix graph, float deltaTime) {
+    public void Chase(Player player, GraphMatrix graph, float deltaTime) {
         // if active, keep chasing
         // if unactive, check if it needs to be active
         if (active) {
             if (RestingAtVertex()) {
-                destination = FindNextDestination(origin, target);
+                destination = FindNextDestination(origin, player.position);
             }
             Move(graph, deltaTime);
-        } else if (FoundPlayer(target)) {
+        } else if (FoundPlayer(player, graph)) {
             active = true;
         }
     }
 
-    bool FoundPlayer(Vector2 target) {
-        return Vector2.Distance(target, position) < DETECTION_DISTANCE;
+    bool FoundPlayer(Player player, GraphMatrix graph) {
+        var edge = player.edge;
+        bool insideSafeZone = false;
+        if (edge.isVertex) {
+            foreach (var path in graph.GetAdjacentPaths(edge.p1)) {
+                if (path.allowedUnitType == UnitType.Player) {
+                    insideSafeZone = true;
+                    break;
+                }
+            }
+        } else if (graph.GetPath(edge) != null
+                && graph.GetPath(edge).allowedUnitType == UnitType.Player) {
+            insideSafeZone = true;
+        }
+
+        if (!insideSafeZone) {
+            return Vector2.Distance(player.position, position) < DETECTION_DISTANCE;
+        }
+        return false;
     }
 }
 }

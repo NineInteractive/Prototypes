@@ -4,9 +4,12 @@ using System.Collections.Generic;
 namespace Nine {
 
 public struct Coord : System.IEquatable<Coord> {
+    /***** PUBLIC: VARIABLES *****/
     public int x;
     public int y;
 
+
+    /***** CONSTRUCTORS *****/
     public Coord(int x, int y) {
         this.x = x;
         this.y = y;
@@ -19,6 +22,8 @@ public struct Coord : System.IEquatable<Coord> {
 
     public Coord(Vector2 v) : this(v.x, v.y) { }
 
+
+    /***** STATIC: METHODS *****/
     public static Coord RandomCoord(int maxX, int maxY, ICollection<Coord> exclude, bool addToCollection=false) {
         var c = RandomCoord(maxX, maxY);
         while (exclude.Contains(c)) {
@@ -34,12 +39,56 @@ public struct Coord : System.IEquatable<Coord> {
                 Random.Range(0, maxY));
     }
 
+
+    /***** PUBLIC: METHODS *****/
     public Vector2 ToVector() {
         return new Vector2(x, y);
     }
 
     public Coord MovedBy(int dx, int dy) {
         return new Coord(x+dx, y+dy);
+    }
+
+    public Coord AdjacentCoord(Direction dir) {
+        Coord c = this;
+        switch (dir) {
+            case Direction.Up:
+                c = MovedBy(0, 1);
+                break;
+            case Direction.Down:
+                c = MovedBy(0, -1);
+                break;
+            case Direction.Left:
+                c = MovedBy(-1, 0);
+                break;
+            case Direction.Right:
+                c = MovedBy(1, 0);
+                break;
+            default:
+                break;
+        }
+
+        return c;
+    }
+
+    public Edge AdjacentEdge(Direction dir) {
+        return new Edge(this, AdjacentCoord(dir));
+    }
+
+    public Edge[] AdjacentEdges() {
+        var edges = new Edge[4];
+        edges[0] = AdjacentEdge(Direction.Up);
+        edges[1] = AdjacentEdge(Direction.Right);
+        edges[2] = AdjacentEdge(Direction.Down);
+        edges[3] = AdjacentEdge(Direction.Left);
+        return edges;
+    }
+
+    /***** PUBLIC: PROPERTIES *****/
+    public bool isNoneNegative {
+        get {
+            return x >= 0 && y >= 0;
+        }
     }
 
     /***** PUBLIC: IEquatable *****/
@@ -132,6 +181,18 @@ public struct Edge {
 
     public override string ToString() {
         return string.Format("Edge: {0}/{1}", p1, p2);
+    }
+
+    public bool isVertex {
+        get {
+            return p1 == p2;
+        }
+    }
+
+    public bool isNoneNegative {
+        get {
+            return p1.isNoneNegative && p2.isNoneNegative;
+        }
     }
 }
 

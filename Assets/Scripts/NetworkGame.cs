@@ -156,7 +156,7 @@ public class NetworkGame : MonoBehaviour {
     IEnumerator PlayTurn() {
         /** Move Enemies **/
         foreach (var e in enemies) {
-            e.Chase(player.position, graph, Time.deltaTime);
+            e.Chase(player, graph, Time.deltaTime);
         }
 
         /** Move Player **/
@@ -286,7 +286,7 @@ public class GraphMatrix {
         Path p;
 
         if (!edgeToPath.TryGetValue(edge, out p)) {
-            Debug.LogError("Edge not found: " + edge);
+            //Debug.Log("Edge not found: " + edge);
         }
 
         return p;
@@ -294,6 +294,16 @@ public class GraphMatrix {
 
     public Path GetPath(int x1, int y1, int x2, int y2) {
         return GetPath(new Edge(x1, y1, x2, y2));
+    }
+
+    public Path[] GetAdjacentPaths(Coord coord) {
+        var paths = new List<Path>();
+        foreach (var edge in coord.AdjacentEdges()) {
+            var p = GetPath(edge);
+            if (p != null) paths.Add(p);
+        }
+
+        return paths.ToArray();
     }
 
     public int Count {
