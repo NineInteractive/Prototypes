@@ -82,10 +82,34 @@ public class NetworkGame : MonoBehaviour {
             Destroy(ur.gameObject);
         }
 
+        var safeZone = new HashSet<Coord>();
         var occupied = new HashSet<Coord>();
 
+        /** Setup Graph **/
+        graph = new GraphMatrix();
+        foreach (var e in Edge.EdgesBetweenCoords(new Coord(0, 0), new Coord(WIDTH, HEIGHT))) {
+            graph.AddPath(new Path(e, RandomLength()));
+        }
+
+        /** Create Safe Zone (Town) **/
+        var centerOfTown = Coord.RandomCoord(WIDTH-1, HEIGHT-1).MovedBy(1, 1);
+        var bottomLeft = centerOfTown.MovedBy(-1, -1);
+        var topRight = centerOfTown.MovedBy(1, 1);
+
+        foreach (var c in Edge.EdgesBetweenCoords(bottomLeft, topRight)) {
+            graph.GetPath(c).allowedUnitType = UnitType.Player;
+            safeZone.Add(c.p1);
+            safeZone.Add(c.p2);
+
+            occupied.Add(c.p1);
+            occupied.Add(c.p2);
+        }
+
+        /** Gem class **/
+
+
         /** Create Gem: possible to be run multiple times **/
-        gemPosition = Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true);
+        var gemPosition = Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true);
 
         ShapeGOFactory.InstantiateRect(
                 new RectProperty(
@@ -98,7 +122,7 @@ public class NetworkGame : MonoBehaviour {
                 ));
 
         /** Create Units **/
-        player = new Player(Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true), PLAYER_SPEED); // init position?
+        player = new Player(safeZone.GetRandomElement<Coord>(), PLAYER_SPEED);
         enemies = new List<Enemy>();
         for (int i=0; i<num_enemies; i++) {
             var ene = new Enemy(Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true),
@@ -106,33 +130,14 @@ public class NetworkGame : MonoBehaviour {
             enemies.Add(ene);
         }
 
-        /** Create Renderers **/
+        /** Create Unit Renderers **/
         new GameObject().AddComponent<UnitRenderer>().unit = player;
         foreach (var e in enemies) {
             new GameObject().AddComponent<UnitRenderer>().unit = e;
         }
 
-        /** Setup Graph **/
-        graph = new GraphMatrix();
-        for (int x=0; x<WIDTH; x++) {
-            for (int y=0; y<HEIGHT; y++) {
-                // north
-                graph.SetLength(new Edge(x, y, x+1, y), RandomLength());
-                // east
-                graph.SetLength(new Edge(x, y, x, y+1), RandomLength());
-            }
-        }
 
-        for (int x=0; x<WIDTH; x++) {
-            graph.SetLength(new Edge(x, HEIGHT, x+1, HEIGHT), RandomLength());
-        }
-
-        for (int y=0; y<HEIGHT; y++) {
-            graph.SetLength(new Edge(WIDTH, y, WIDTH, y+1), RandomLength());
-        }
-
-
-        // render
+        /** Render Graph **/
         graphRenderer = new GraphRenderer();
         graphRenderer.RenderGraph(graph);
     }
@@ -261,24 +266,39 @@ public class NetworkGame : MonoBehaviour {
 public class GraphMatrix {
     public const float NO_CONNECTION = -1;
 
-    public readonly Dictionary<Edge, float> lengthBetweenVertices = new Dictionary<Edge, float>();
+    public readonly Dictionary<Edge, Path> edgeToPath = new Dictionary<Edge, Path>();
 
-    public float GetLength(Edge edge) {
-        float len;
-        if (!lengthBetweenVertices.TryGetValue(edge, out len)) {
-            Debug.LogError("Edge not found: " + edge);
-        }
-        return len;
+    public void AddPath(Path path) {
+        edgeToPath[path.edge] = path;
+        edgeToPath[path.edge.Reverse()] = path;
     }
 
-    public void SetLength(Edge edge, float length) {
-        lengthBetweenVertices[edge] = length;
-        lengthBetweenVertices[edge.Reverse()] = length;
+    public float GetLength(Edge edge) {
+        Path p;
+        if (!edgeToPath.TryGetValue(edge, out p)) {
+            Debug.LogError("Edge not found: " + edge);
+            return 0;
+        }
+        return p.length;
+    }
+
+    public Path GetPath(Edge edge) {
+        Path p;
+
+        if (!edgeToPath.TryGetValue(edge, out p)) {
+            Debug.LogError("Edge not found: " + edge);
+        }
+
+        return p;
+    }
+
+    public Path GetPath(int x1, int y1, int x2, int y2) {
+        return GetPath(new Edge(x1, y1, x2, y2));
     }
 
     public int Count {
         get {
-            return lengthBetweenVertices.Count;
+            return edgeToPath.Count;
         }
     }
 }
@@ -292,18 +312,23 @@ public class GraphRenderer {
 
     public void RenderGraph(GraphMatrix mat) {
         edgeRendererDict = new Dictionary<Edge, RectRenderer>();
-        foreach (var pair in mat.lengthBetweenVertices) {
+        foreach (var pair in mat.edgeToPath) {
             // draw edge
-            var len = pair.Value;
             var edge = pair.Key;
+            var path = pair.Value;
 
             Vector2 center = edge.Midpoint()*LINE_LENGTH_SCALE;
             float length = LINE_LENGTH_SCALE; // only connected to adjacent vertices
-            float width = LINE_WIDTH_SCALE / len;
+            float width = LINE_WIDTH_SCALE / path.length;
             float angle = edge.orientation == Orientation.Vertical ? 90 : 0;
 
+            var color = Color.white;
+            if (path.allowedUnitType == UnitType.Player) {
+                color = Color.yellow;
+            }
+
             ShapeGOFactory.InstantiateShape(new RectProperty(
-                        center: center, height: length, width: width, angle: angle, color: Color.white
+                        center: center, height: length, width: width, angle: angle, color: color
             ));
         }
     }

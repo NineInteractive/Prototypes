@@ -74,9 +74,41 @@ public struct Edge {
         this.p2 = p2;
     }
 
-    public Edge(int x1, int y1, int x2, int y2) : this(new Coord(x1, y1), new Coord(x2, y2)) {
-    }
+    public Edge(int x1, int y1, int x2, int y2) : this(new Coord(x1, y1), new Coord(x2, y2)) { }
 
+
+    /***** PUBLIC: STATIC METHODS *****/
+    public static List<Edge> EdgesBetweenCoords(Coord c1, Coord c2) {
+        var edges = new List<Edge>();
+        int width = Mathf.Abs(c2.x - c1.x);
+        int height = Mathf.Abs(c2.y - c1.y);
+        int left = Mathf.Min(c1.x, c2.x);
+        int bottom = Mathf.Min(c1.y, c2.y);
+        int right = left+width;
+        int top = bottom+height;
+
+        for (int x=left; x<right; x++) {
+            for (int y=bottom; y<top; y++) {
+                // north
+                Edge north = new Edge(x, y, x, y+1);
+                Edge east = new Edge(x, y, x+1, y);
+                edges.Add(north);
+                edges.Add(east);
+            }
+        }
+
+        for (int x=left; x<right; x++) {
+            Edge farNorth = new Edge(x, top, x+1, top);
+            edges.Add(farNorth);
+        }
+
+        for (int y=bottom; y<top; y++) {
+            Edge farEast = new Edge(right, y, right, y+1);
+            edges.Add(farEast);
+        }
+
+        return edges;
+    }
 
     /***** PUBLIC: METHODS *****/
     public Edge Reverse() {
