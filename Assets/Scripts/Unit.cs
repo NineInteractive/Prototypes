@@ -139,7 +139,7 @@ public class Enemy : Unit {
     public Enemy(Vector2 c, float speed): base(c, speed) {}
     public Enemy(Coord c, float speed) : base (c, speed) {}
 
-    public void Chase(Player player, GraphMatrix graph, float deltaTime) {
+    public void Chase(Player player, GraphMatrix graph, float deltaTime, bool forceChase=false) {
         // if active, keep chasing
         // if unactive, check if it needs to be active
         if (active) {
@@ -147,7 +147,7 @@ public class Enemy : Unit {
                 destination = FindNextDestination(origin, player.position);
             }
             Move(graph, deltaTime);
-        } else if (FoundPlayer(player, graph)) {
+        } else if (FoundPlayer(player, graph) || forceChase) {
             active = true;
         }
     }

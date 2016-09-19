@@ -33,7 +33,10 @@ public class NetworkGame : MonoBehaviour {
 
     Player player;
     List<Enemy> enemies;
+
+    /*** TODO: GEEEEEMMMM ***/
     Coord gemPosition;
+    bool gemPickedUp = false;
 
 	// Use this for initialization
 	void Awake () {
@@ -144,11 +147,13 @@ public class NetworkGame : MonoBehaviour {
 
     void IncreaseDifficulty() {
         num_enemies += MORE_ENEMIES_PER_STAGE;
+        gemPickedUp = false;
     }
 
     void ResetDifficulty() {
         num_enemies = START_ENEMY_COUNT;
         turns = 0;
+        gemPickedUp = false;
     }
 
 
@@ -156,7 +161,7 @@ public class NetworkGame : MonoBehaviour {
     IEnumerator PlayTurn() {
         /** Move Enemies **/
         foreach (var e in enemies) {
-            e.Chase(player, graph, Time.deltaTime);
+            e.Chase(player, graph, Time.deltaTime, GemPickedUp());
         }
 
         /** Move Player **/
@@ -208,7 +213,22 @@ public class NetworkGame : MonoBehaviour {
     }
 
     bool WonLevel() {
-        if (!PlayerIsDead() && Approx(player.position, gemPosition.ToVector())) {
+        if (!PlayerIsDead() && GemPickedUp() && PlayerInSafeZone()) {
+            return true;
+        }
+        return false;
+    }
+
+    bool GemPickedUp() {
+        if (!gemPickedUp && Approx(player.position, gemPosition.ToVector())) {
+            gemPickedUp = true;
+        }
+        return gemPickedUp;
+    }
+
+    bool PlayerInSafeZone() {
+        var path = graph.GetPath(player.edge);
+        if (path != null && path.allowedUnitType == UnitType.Player) {
             return true;
         }
         return false;
