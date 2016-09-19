@@ -200,7 +200,7 @@ public class NetworkGame : MonoBehaviour {
     /***** SCHEHERAZADE *****/
     IEnumerator ScheherazadeSpeaks() {
         textbox.text = "";
-        yield return new WaitForSeconds(SECONDS_BETWEEN_TEXT);
+        yield return new WaitForSeconds(0.4f);
         foreach (var line in DialogueSystem.DialogueForStage(stage)) {
             textbox.text = line;
             yield return new WaitForSeconds(SECONDS_BETWEEN_TEXT);

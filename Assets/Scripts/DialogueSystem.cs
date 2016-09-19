@@ -3,22 +3,15 @@ using System.Collections.Generic;
 
 namespace NetworkGame {
     public class DialogueSystem {
+        static string[] DELIMITER = new string[]{"\n\n"};
         public static string[] DialogueForStage(int stage) {
-            var d = new List<string>();
+            var dialogue = Resources.Load<TextAsset>("dialogue");
+            string[] stageDialogue = dialogue.text.Split(DELIMITER, System.StringSplitOptions.None);
 
-            switch (stage) {
-                case 0:
-                    break;
-                case 1:
-                    d.Add("Thankfully, Scheherazade wakes up.");
-                    break;
-                case 2:
-                    d.Add("She begins the story of a young opal collector who yearned to amass enough township to free the game.");
-                    break;
-
+            if (stageDialogue.Length > stage) {
+                return stageDialogue[stage].Split('\n');
             }
-
-            return d.ToArray();
+            return new string[]{};
         }
     }
 }
