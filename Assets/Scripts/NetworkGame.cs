@@ -19,13 +19,16 @@ public class NetworkGame : MonoBehaviour {
     const int START_ENEMY_COUNT = 10;
     const int MORE_ENEMIES_PER_STAGE = 2;
 
+    const float SECONDS_BETWEEN_TEXT = 3;
+
     static int[] LENGTHS = {1, 1, 1, 4};
 
-    public Text renderer;
+    public Text textbox;
 
     int num_enemies = START_ENEMY_COUNT;
 
     int turns;
+    int stage = 1;
 
     /*Grid grid;*/
     GraphMatrix graph;
@@ -34,7 +37,7 @@ public class NetworkGame : MonoBehaviour {
     Player player;
     List<Enemy> enemies;
 
-    /*** TODO: GEEEEEMMMM ***/
+    /*** TODO: GEM ***/
     Coord gemPosition;
     bool gemPickedUp = false;
 
@@ -58,11 +61,13 @@ public class NetworkGame : MonoBehaviour {
                 //Debug.Log(">    Turn " + turns);
                 //RenderBoard();
                 yield return StartCoroutine(PlayTurn());
+                /*PlayTurn2();*/
                 yield return null;
             } while (!(PlayerIsDead() || WonLevel()));
             //RenderBoard();
             ShowResult();
             if (WonLevel()) {
+                yield return StartCoroutine(ScheherazadeSpeaks());
                 IncreaseDifficulty();
             } else {
                 ResetDifficulty();
@@ -148,12 +153,14 @@ public class NetworkGame : MonoBehaviour {
     void IncreaseDifficulty() {
         num_enemies += MORE_ENEMIES_PER_STAGE;
         gemPickedUp = false;
+        stage++;
     }
 
     void ResetDifficulty() {
         num_enemies = START_ENEMY_COUNT;
         turns = 0;
         gemPickedUp = false;
+        stage = 1;
     }
 
 
@@ -175,28 +182,33 @@ public class NetworkGame : MonoBehaviour {
         player.Move(graph, Time.deltaTime);
     }
 
-    /*
-    void RemoveOverlappedEnemies() {
-        var enemyPos = new Dictionary<Coord, List<Enemy>>();
-        foreach (var enemy in enemies) {
-            if (!enemyPos.ContainsKey(enemy.position)) {
-                enemyPos[enemy.position] = new List<Enemy>();
-            }
-            enemyPos[enemy.position].Add(enemy);
+    void PlayTurn2() {
+        /** Move Enemies **/
+        foreach (var e in enemies) {
+            e.Chase(player, graph, Time.deltaTime, GemPickedUp());
         }
 
-        foreach (var unitsOnSameCoord in enemyPos.Values) {
-            if (unitsOnSameCoord.Count > 1) {
-                foreach (var e in unitsOnSameCoord) {
-                    enemies.Remove(e);
-                }
-            }
+        /** Move Player **/
+        if (player.RestingAtVertex()) {
+            turns++;
+            player.MoveToward(DirectionUtil.FromInput());
         }
+        player.Move(graph, Time.deltaTime);
     }
-    */
 
-    /***** GAME STATUS *****/
 
+    /***** SCHEHERAZADE *****/
+    IEnumerator ScheherazadeSpeaks() {
+        textbox.text = "";
+        yield return new WaitForSeconds(SECONDS_BETWEEN_TEXT);
+        foreach (var line in DialogueSystem.DialogueForStage(stage)) {
+            textbox.text = line;
+            yield return new WaitForSeconds(SECONDS_BETWEEN_TEXT);
+        }
+        textbox.text = "";
+    }
+
+    /***** PROPERTIES - GAME STATUS *****/
     bool PlayerIsDead() {
         foreach (Enemy e in enemies) {
             if (e != null && Approx(e.position, player.position)) {
@@ -227,9 +239,17 @@ public class NetworkGame : MonoBehaviour {
     }
 
     bool PlayerInSafeZone() {
-        var path = graph.GetPath(player.edge);
-        if (path != null && path.allowedUnitType == UnitType.Player) {
-            return true;
+        if (player.edge.isVertex) {
+            foreach (var path in graph.GetAdjacentPaths(player.edge.p1)) {
+                if (path.allowedUnitType == UnitType.Player) {
+                    return true;
+                }
+            }
+        } else {
+            var path = graph.GetPath(player.edge);
+            if (path != null && path.allowedUnitType == UnitType.Player) {
+                return true;
+            }
         }
         return false;
     }
@@ -238,44 +258,8 @@ public class NetworkGame : MonoBehaviour {
         return Vector2.Distance(p1, p2) < CAPTURE_DISTANCE;
     }
 
+
     /***** RENDERING *****/
-
-    /*
-    void RenderBoard() {
-        string output = "";
-        for (int y = HEIGHT-1; y>=0; y--) {
-            for (int x = 0; x<WIDTH; x++) {
-                var here = new Coord(x, y);
-                var c = CharForPosition(here);
-                output += c;
-            }
-            output += '\n';
-        }
-        renderer.text = output;
-    }
-
-    char CharForPosition(Coord pos) {
-        if (player.position == pos) {
-            if (PlayerIsDead()) {
-                return 'X';
-            } else {
-                return '@';
-            }
-        }
-
-        foreach (var e in enemies) {
-            if (e != null && e.position == pos) {
-                return 'O';
-            }
-        }
-
-        if (pos == gemPosition) {
-            return '♢';
-        }
-        return '+';
-    }
-    */
-
     void ShowResult() {
         Debug.Log("Survived for " + turns + " turns");
     }
