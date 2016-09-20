@@ -2,16 +2,69 @@
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Nine;
 
 namespace NetworkGame {
 
+public class Town {
+
+    public static List<Edge> residence = Edge.EdgesBetweenCoords(new Coord(1, 1), new Coord(3, 3));
+    public static List<Edge> library = Edge.EdgesBetweenCoords(new Coord(5, 5), new Coord(7, 6));
+    public static List<Edge> hill = Edge.EdgesBetweenCoords(new Coord(4, 7), new Coord(5, 8));
+    public static List<Edge> cave = Edge.EdgesBetweenCoords(new Coord(1, 6), new Coord(2, 7));
+
+    static HashSet<Coord> _safeZone;
+
+    public static HashSet<Coord> safeZone {
+        get {
+            if (_safeZone == null) {
+                _safeZone = new HashSet<Coord>();
+                foreach (var edge in residence.Concat(library).Concat(hill)) {
+                    _safeZone.Add(edge.p1);
+                    _safeZone.Add(edge.p2);
+                }
+            }
+            return _safeZone;
+        }
+    }
+
+    public static HashSet<Coord> CoordsForLandmark(List<Edge> landmark) {
+        var set = new HashSet<Coord>();
+        foreach (var edge in landmark) {
+            set.Add(edge.p1);
+            set.Add(edge.p2);
+        }
+        return set;
+    }
+
+    public static HashSet<Coord> CreateBaseOccupied() {
+        var occupied = new HashSet<Coord>();
+        foreach (var edge in residence.Concat(library).Concat(hill).Concat(cave)) {
+            occupied.Add(edge.p1);
+            occupied.Add(edge.p2);
+        }
+        return occupied;
+    }
+
+    public static void ApplyToGraph(GraphMatrix graph) {
+        _ApplyToGraph(graph, residence, LandmarkType.Residence, UnitType.Player);
+        _ApplyToGraph(graph, library, LandmarkType.Library, UnitType.Player);
+        _ApplyToGraph(graph, hill, LandmarkType.Hill, UnitType.Player);
+        _ApplyToGraph(graph, cave, LandmarkType.Cave, UnitType.Enemy);
+    }
+
+    static void _ApplyToGraph(GraphMatrix graph, List<Edge> edges, LandmarkType ltype, UnitType allowed) {
+        foreach (var e in edges) {
+            var p = graph.GetPath(e);
+            p.landmarkType = ltype;
+            p.allowedUnitType = allowed;
+        }
+    }
+}
+
 public class NetworkGame : MonoBehaviour {
-
-
     /***** CONSTS, STATIC VARS *****/
-
-
     /** Map **/
     const int WIDTH = 8;
     const int HEIGHT = 8;
@@ -30,14 +83,10 @@ public class NetworkGame : MonoBehaviour {
 
 
     /***** PUBLIC: VARIABLES *****/
-
-
     public Text textbox;
 
 
     /***** PRIVATE: VARIABLES *****/
-
-
     /** Game status **/
     int num_enemies = START_ENEMY_COUNT;
     int turns;
@@ -54,16 +103,9 @@ public class NetworkGame : MonoBehaviour {
 
     /** Town **/
     Coord gemPosition;
-    Coord centerOfTown;
 
-    Edge[] residence;
-    Edge[] library;
-    Edge[] hill;
-    Edge[] cave;
 
     /***** INITIALIZERS *****/
-
-
 	void Awake () {
         StartCoroutine(Play());
 	}
@@ -106,33 +148,14 @@ public class NetworkGame : MonoBehaviour {
             Destroy(ur.gameObject);
         }
 
-        var safeZone = new HashSet<Coord>();
-        var occupied = new HashSet<Coord>();
-
         /* Setup Graph */
         graph = new GraphMatrix();
         foreach (var e in Edge.EdgesBetweenCoords(new Coord(0, 0), new Coord(WIDTH, HEIGHT))) {
             graph.AddPath(new Path(e, RandomLength()));
         }
 
-        /* Create Safe Zone (Town) */
-        if (centerOfTown == new Coord()) {
-            centerOfTown = Coord.RandomCoord(WIDTH-1, HEIGHT-1).MovedBy(1, 1);
-        }
-        Debug.Log("Center of town:" + centerOfTown);
-        var bottomLeft = centerOfTown.MovedBy(-1, -1);
-        var topRight = centerOfTown.MovedBy(1, 1);
-
-        foreach (var c in Edge.EdgesBetweenCoords(bottomLeft, topRight)) {
-            graph.GetPath(c).allowedUnitType = UnitType.Player;
-            safeZone.Add(c.p1);
-            safeZone.Add(c.p2);
-
-            occupied.Add(c.p1);
-            occupied.Add(c.p2);
-        }
-
-        /* Gem class */
+        Town.ApplyToGraph(graph);
+        var occupied = Town.CreateBaseOccupied();
 
         /* Create Gem: possible to be run multiple times */
         gemPosition = Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true);
@@ -148,7 +171,7 @@ public class NetworkGame : MonoBehaviour {
                 ));
 
         /* Create Units */
-        player = new Player(safeZone.GetRandomElement<Coord>(), PLAYER_SPEED);
+        player = new Player(Town.CoordsForLandmark(Town.residence).GetRandomElement<Coord>(), PLAYER_SPEED);
         enemies = new List<Enemy>();
         for (int i=0; i<num_enemies; i++) {
             var ene = new Enemy(Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true),
@@ -168,6 +191,8 @@ public class NetworkGame : MonoBehaviour {
         graphRenderer.RenderGraph(graph);
     }
 
+    void SetupTown() {
+    }
 
     /***** PLAY LOGIC *****/
 
@@ -366,8 +391,22 @@ public class GraphRenderer {
             float angle = edge.orientation == Orientation.Vertical ? 90 : 0;
 
             var color = Color.white;
-            if (path.allowedUnitType == UnitType.Player) {
-                color = Color.yellow;
+            switch (path.landmarkType) {
+                case LandmarkType.Cave:
+                    color = Color.cyan;
+                    break;
+                case LandmarkType.Hill:
+                    color = Color.magenta;
+                    break;
+                case LandmarkType.Library:
+                    color = Color.green;
+                    break;
+                case LandmarkType.Residence:
+                    color = Color.yellow;
+                    break;
+                default:
+                    color = Color.white;
+                    break;
             }
 
             ShapeGOFactory.InstantiateShape(new RectProperty(
