@@ -8,53 +8,71 @@ namespace NetworkGame {
 
 public class NetworkGame : MonoBehaviour {
 
+
+    /***** CONSTS, STATIC VARS *****/
+
+
+    /** Map **/
     const int WIDTH = 8;
     const int HEIGHT = 8;
     const float CAPTURE_DISTANCE = 0.05f;
+    static int[] LENGTHS = {1, 1, 1, 4};
 
+    /** Units **/
     const float PLAYER_SPEED = 1f;
     const float ENEMY_MIN_SPEED = 0.5f;
     const float ENEMY_MAX_SPEED = 0.5f;
-
     const int START_ENEMY_COUNT = 10;
     const int MORE_ENEMIES_PER_STAGE = 2;
 
+    /** Dialogue **/
     const float SECONDS_BETWEEN_TEXT = 3;
 
-    static int[] LENGTHS = {1, 1, 1, 4};
+
+    /***** PUBLIC: VARIABLES *****/
+
 
     public Text textbox;
 
-    int num_enemies = START_ENEMY_COUNT;
 
+    /***** PRIVATE: VARIABLES *****/
+
+
+    /** Game status **/
+    int num_enemies = START_ENEMY_COUNT;
     int turns;
     int stage = 1;
+    bool gemPickedUp = false;
 
-    /*Grid grid;*/
+    /** Graph **/
     GraphMatrix graph;
     GraphRenderer graphRenderer;
 
+    /** Units **/
     Player player;
     List<Enemy> enemies;
 
-    /*** TODO: GEM ***/
+    /** Town **/
     Coord gemPosition;
-    bool gemPickedUp = false;
+    Coord centerOfTown;
 
-	// Use this for initialization
+    Edge[] residence;
+    Edge[] library;
+    Edge[] hill;
+    Edge[] cave;
+
+    /***** INITIALIZERS *****/
+
+
 	void Awake () {
         StartCoroutine(Play());
 	}
 
-	// Update is called once per frame
-	void Update () {
-	}
+
+    /***** MAIN LOGIC *****/
+
 
     IEnumerator Play() {
-        // setup
-        // turn
-        // check death
-        // print
         while (true) {
             Setup();
             do {
@@ -75,14 +93,12 @@ public class NetworkGame : MonoBehaviour {
         }
     }
 
+
     /***** SETUP *****/
 
-    int RandomLength() {
-        return LENGTHS[Random.Range(0, LENGTHS.Length)];
-    }
 
     void Setup() {
-        /** Reset: if there are any renderers in the scene, destroy them **/
+        /* Reset: if there are any renderers in the scene, destroy them */
         foreach (var ur in GameObject.FindObjectsOfType<UnitRenderer>()) {
             Destroy(ur.gameObject);
         }
@@ -93,14 +109,17 @@ public class NetworkGame : MonoBehaviour {
         var safeZone = new HashSet<Coord>();
         var occupied = new HashSet<Coord>();
 
-        /** Setup Graph **/
+        /* Setup Graph */
         graph = new GraphMatrix();
         foreach (var e in Edge.EdgesBetweenCoords(new Coord(0, 0), new Coord(WIDTH, HEIGHT))) {
             graph.AddPath(new Path(e, RandomLength()));
         }
 
-        /** Create Safe Zone (Town) **/
-        var centerOfTown = Coord.RandomCoord(WIDTH-1, HEIGHT-1).MovedBy(1, 1);
+        /* Create Safe Zone (Town) */
+        if (centerOfTown == new Coord()) {
+            centerOfTown = Coord.RandomCoord(WIDTH-1, HEIGHT-1).MovedBy(1, 1);
+        }
+        Debug.Log("Center of town:" + centerOfTown);
         var bottomLeft = centerOfTown.MovedBy(-1, -1);
         var topRight = centerOfTown.MovedBy(1, 1);
 
@@ -113,10 +132,9 @@ public class NetworkGame : MonoBehaviour {
             occupied.Add(c.p2);
         }
 
-        /** Gem class **/
+        /* Gem class */
 
-
-        /** Create Gem: possible to be run multiple times **/
+        /* Create Gem: possible to be run multiple times */
         gemPosition = Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true);
 
         ShapeGOFactory.InstantiateRect(
@@ -129,7 +147,7 @@ public class NetworkGame : MonoBehaviour {
                     layer: -2
                 ));
 
-        /** Create Units **/
+        /* Create Units */
         player = new Player(safeZone.GetRandomElement<Coord>(), PLAYER_SPEED);
         enemies = new List<Enemy>();
         for (int i=0; i<num_enemies; i++) {
@@ -138,33 +156,22 @@ public class NetworkGame : MonoBehaviour {
             enemies.Add(ene);
         }
 
-        /** Create Unit Renderers **/
+        /* Create Unit Renderers */
         new GameObject().AddComponent<UnitRenderer>().unit = player;
         foreach (var e in enemies) {
             new GameObject().AddComponent<UnitRenderer>().unit = e;
         }
 
 
-        /** Render Graph **/
+        /* Render Graph */
         graphRenderer = new GraphRenderer();
         graphRenderer.RenderGraph(graph);
     }
 
-    void IncreaseDifficulty() {
-        num_enemies += MORE_ENEMIES_PER_STAGE;
-        gemPickedUp = false;
-        stage++;
-    }
-
-    void ResetDifficulty() {
-        num_enemies = START_ENEMY_COUNT;
-        turns = 0;
-        gemPickedUp = false;
-        stage = 1;
-    }
-
 
     /***** PLAY LOGIC *****/
+
+
     IEnumerator PlayTurn() {
         /** Move Enemies **/
         foreach (var e in enemies) {
@@ -207,6 +214,22 @@ public class NetworkGame : MonoBehaviour {
         }
         textbox.text = "";
     }
+
+
+    /***** END GAME LOGIC *****/
+    void IncreaseDifficulty() {
+        num_enemies += MORE_ENEMIES_PER_STAGE;
+        gemPickedUp = false;
+        stage++;
+    }
+
+    void ResetDifficulty() {
+        num_enemies = START_ENEMY_COUNT;
+        turns = 0;
+        gemPickedUp = false;
+        stage = 1;
+    }
+
 
     /***** PROPERTIES - GAME STATUS *****/
     bool PlayerIsDead() {
@@ -252,6 +275,12 @@ public class NetworkGame : MonoBehaviour {
             }
         }
         return false;
+    }
+
+
+    /***** HELPERS *****/
+    int RandomLength() {
+        return LENGTHS[Random.Range(0, LENGTHS.Length)];
     }
 
     bool Approx(Vector2 p1, Vector2 p2) {
