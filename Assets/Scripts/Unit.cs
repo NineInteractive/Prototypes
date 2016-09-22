@@ -142,17 +142,25 @@ public class Enemy : Unit {
     public Enemy(Vector2 c, float speed): base(c, speed) {}
     public Enemy(Coord c, float speed) : base (c, speed) {}
 
-    public void Chase(Player player, GraphMatrix graph, float deltaTime, bool forceChase=false) {
+    public void Chase(
+            Player player, GraphMatrix graph,
+            float deltaTime, bool forceChase=false,
+            bool playerInSafeZone=false) {
         // if active, keep chasing
         // if unactive, check if it needs to be active
         if (active) {
+            if (playerInSafeZone) return;
             if (RestingAtVertex()) {
                 destination = FindNextDestination(origin, player.position);
             }
             Move(graph, deltaTime);
-        } else if (FoundPlayer(player, graph) || forceChase) {
+        } else if (!playerInSafeZone && (NearPlayer(player, graph) || forceChase)) {
             active = true;
         }
+    }
+
+    bool NearPlayer(Player player, GraphMatrix graph) {
+        return Vector2.Distance(player.position, position) < DETECTION_DISTANCE;
     }
 
     bool FoundPlayer(Player player, GraphMatrix graph) {

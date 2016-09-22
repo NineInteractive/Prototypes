@@ -88,8 +88,8 @@ public class NetworkGame : MonoBehaviour {
     /** Units **/
     const float PLAYER_SPEED = 1f;
     const float ENEMY_MIN_SPEED = 0.5f;
-    const float ENEMY_MAX_SPEED = 0.5f;
-    const int START_ENEMY_COUNT = 6;
+    const float ENEMY_MAX_SPEED = 0.7f;
+    const int START_ENEMY_COUNT = 16;
     const int MORE_ENEMIES_PER_STAGE = 2;
 
     /** Dialogue **/
@@ -227,7 +227,7 @@ public class NetworkGame : MonoBehaviour {
     IEnumerator PlayTurn() {
         /** Move Enemies **/
         foreach (var e in enemies) {
-            e.Chase(player, graph, Time.deltaTime, GemPickedUp());
+            e.Chase(player, graph, Time.deltaTime, GemPickedUp(), PlayerInSafeZone());
         }
 
         /** Move Player **/
