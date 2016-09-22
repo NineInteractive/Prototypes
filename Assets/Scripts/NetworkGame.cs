@@ -8,15 +8,35 @@ using Nine;
 namespace NetworkGame {
 
 public class Town {
+    /***** PUBLIC: VARIABLES *****/
+    /** Landmarks **/
+    public List<Edge> residence = Edge.EdgesBetweenCoords(new Coord(1, 1), new Coord(3, 3));
+    public List<Edge> library = Edge.EdgesBetweenCoords(new Coord(5, 5), new Coord(7, 6));
+    public List<Edge> hill = Edge.EdgesBetweenCoords(new Coord(4, 7), new Coord(5, 8));
+    public List<Edge> cave = Edge.EdgesBetweenCoords(new Coord(1, 6), new Coord(2, 7));
 
-    public static List<Edge> residence = Edge.EdgesBetweenCoords(new Coord(1, 1), new Coord(3, 3));
-    public static List<Edge> library = Edge.EdgesBetweenCoords(new Coord(5, 5), new Coord(7, 6));
-    public static List<Edge> hill = Edge.EdgesBetweenCoords(new Coord(4, 7), new Coord(5, 8));
-    public static List<Edge> cave = Edge.EdgesBetweenCoords(new Coord(1, 6), new Coord(2, 7));
 
-    static HashSet<Coord> _safeZone;
+    /** Other game states **/
+    public int gemsCollected = 0;
+    public int datesLeft = 10;
 
-    public static HashSet<Coord> safeZone {
+    /***** PRIVATE: VARIABLES *****/
+    HashSet<Coord> _safeZone;
+
+
+    /***** PUBLIC: STATIC METHODS *****/
+    public static HashSet<Coord> CoordsForLandmark(List<Edge> landmark) {
+        var set = new HashSet<Coord>();
+        foreach (var edge in landmark) {
+            set.Add(edge.p1);
+            set.Add(edge.p2);
+        }
+        return set;
+    }
+
+
+    /***** PUBLIC: METHODS *****/
+    public HashSet<Coord> safeZone {
         get {
             if (_safeZone == null) {
                 _safeZone = new HashSet<Coord>();
@@ -29,16 +49,7 @@ public class Town {
         }
     }
 
-    public static HashSet<Coord> CoordsForLandmark(List<Edge> landmark) {
-        var set = new HashSet<Coord>();
-        foreach (var edge in landmark) {
-            set.Add(edge.p1);
-            set.Add(edge.p2);
-        }
-        return set;
-    }
-
-    public static HashSet<Coord> CreateBaseOccupied() {
+    public HashSet<Coord> CreateBaseOccupied() {
         var occupied = new HashSet<Coord>();
         foreach (var edge in residence.Concat(library).Concat(hill).Concat(cave)) {
             occupied.Add(edge.p1);
@@ -47,14 +58,16 @@ public class Town {
         return occupied;
     }
 
-    public static void ApplyToGraph(GraphMatrix graph) {
+    public void ApplyToGraph(GraphMatrix graph) {
         _ApplyToGraph(graph, residence, LandmarkType.Residence, UnitType.Player);
         _ApplyToGraph(graph, library, LandmarkType.Library, UnitType.Player);
         _ApplyToGraph(graph, hill, LandmarkType.Hill, UnitType.Player);
         _ApplyToGraph(graph, cave, LandmarkType.Cave, UnitType.Enemy);
     }
 
-    static void _ApplyToGraph(GraphMatrix graph, List<Edge> edges, LandmarkType ltype, UnitType allowed) {
+
+    /***** PRIVATE: METHODS *****/
+    void _ApplyToGraph(GraphMatrix graph, List<Edge> edges, LandmarkType ltype, UnitType allowed) {
         foreach (var e in edges) {
             var p = graph.GetPath(e);
             p.landmarkType = ltype;
@@ -62,6 +75,7 @@ public class Town {
         }
     }
 }
+
 
 public class NetworkGame : MonoBehaviour {
     /***** CONSTS, STATIC VARS *****/
@@ -75,18 +89,25 @@ public class NetworkGame : MonoBehaviour {
     const float PLAYER_SPEED = 1f;
     const float ENEMY_MIN_SPEED = 0.5f;
     const float ENEMY_MAX_SPEED = 0.5f;
-    const int START_ENEMY_COUNT = 10;
+    const int START_ENEMY_COUNT = 6;
     const int MORE_ENEMIES_PER_STAGE = 2;
 
     /** Dialogue **/
     const float SECONDS_BETWEEN_TEXT = 3;
 
+    /** Additional Game States **/
+    const int NUMBER_OF_DAYS = 11;
+    const int NUMBER_OF_GEMS = 5;
+
 
     /***** PUBLIC: VARIABLES *****/
-    public Text textbox;
+    public Text statusTextbox;
+    public Text speechTextbox;
 
 
     /***** PRIVATE: VARIABLES *****/
+    Town town;
+
     /** Game status **/
     int num_enemies = START_ENEMY_COUNT;
     int turns;
@@ -102,7 +123,8 @@ public class NetworkGame : MonoBehaviour {
     List<Enemy> enemies;
 
     /** Town **/
-    Coord gemPosition;
+    List<Coord> gemPositions;
+    List<RectRenderer> gemRenderers;
 
 
     /***** INITIALIZERS *****/
@@ -117,19 +139,21 @@ public class NetworkGame : MonoBehaviour {
     IEnumerator Play() {
         while (true) {
             Setup();
+            UpdateStatusBoard();
             do {
-                //Debug.Log(">    Turn " + turns);
-                //RenderBoard();
                 yield return StartCoroutine(PlayTurn());
                 /*PlayTurn2();*/
                 yield return null;
+                UpdateStatusBoard();
             } while (!(PlayerIsDead() || WonLevel()));
-            //RenderBoard();
             ShowResult();
             if (WonLevel()) {
+                MadeItBack();
+                UpdateStatusBoard();
                 yield return StartCoroutine(ScheherazadeSpeaks());
                 IncreaseDifficulty();
             } else {
+                UpdateStatusBoard();
                 ResetDifficulty();
             }
         }
@@ -148,30 +172,36 @@ public class NetworkGame : MonoBehaviour {
             Destroy(ur.gameObject);
         }
 
+        /* Create Town */
+        if (town == null) town = new Town();
+
         /* Setup Graph */
         graph = new GraphMatrix();
         foreach (var e in Edge.EdgesBetweenCoords(new Coord(0, 0), new Coord(WIDTH, HEIGHT))) {
             graph.AddPath(new Path(e, RandomLength()));
         }
 
-        Town.ApplyToGraph(graph);
-        var occupied = Town.CreateBaseOccupied();
+        town.ApplyToGraph(graph);
+        var occupied = town.CreateBaseOccupied();
 
         /* Create Gem: possible to be run multiple times */
-        gemPosition = Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true);
-
-        ShapeGOFactory.InstantiateRect(
-                new RectProperty(
-                    center:gemPosition.ToVector(),
-                    width: 0.2f,
-                    height: 0.2f,
-                    color: Color.red,
-                    angle: 45,
-                    layer: -2
-                ));
+        gemPositions = new List<Coord>();
+        gemRenderers = new List<RectRenderer>();
+        for (int i = 0; i < NUMBER_OF_GEMS; i++) {
+            gemPositions.Add(Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true));
+            gemRenderers.Add(ShapeGOFactory.InstantiateRect(
+                    new RectProperty(
+                        center:gemPositions[i].ToVector(),
+                        width: 0.2f,
+                        height: 0.2f,
+                        color: Color.red,
+                        angle: 45,
+                        layer: -2
+                    )));
+        }
 
         /* Create Units */
-        player = new Player(Town.CoordsForLandmark(Town.residence).GetRandomElement<Coord>(), PLAYER_SPEED);
+        player = new Player(Town.CoordsForLandmark(town.residence).GetRandomElement<Coord>(), PLAYER_SPEED);
         enemies = new List<Enemy>();
         for (int i=0; i<num_enemies; i++) {
             var ene = new Enemy(Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true),
@@ -189,9 +219,6 @@ public class NetworkGame : MonoBehaviour {
         /* Render Graph */
         graphRenderer = new GraphRenderer();
         graphRenderer.RenderGraph(graph);
-    }
-
-    void SetupTown() {
     }
 
     /***** PLAY LOGIC *****/
@@ -212,6 +239,8 @@ public class NetworkGame : MonoBehaviour {
             player.MoveToward(DirectionUtil.FromInput());
         }
         player.Move(graph, Time.deltaTime);
+
+        PickUpGem();
     }
 
     void PlayTurn2() {
@@ -228,31 +257,71 @@ public class NetworkGame : MonoBehaviour {
         player.Move(graph, Time.deltaTime);
     }
 
+    void PickUpGem() {
+        for (int i = 0; i < gemPositions.Count; i++) {
+            var coord = gemPositions[i];
+            if (Approx(coord.ToVector(), player.position)) {
+                gemPositions.RemoveAt(i);
+                var renderer = gemRenderers[i];
+                Destroy(renderer.gameObject);
+                gemRenderers.RemoveAt(i);
+                player.gemsCarrying++;
+                gemPickedUp = true;
+                return;
+            }
+        }
+    }
 
     /***** SCHEHERAZADE *****/
     IEnumerator ScheherazadeSpeaks() {
-        textbox.text = "";
+        speechTextbox.text = "";
         yield return new WaitForSeconds(0.4f);
         foreach (var line in DialogueSystem.DialogueForStage(stage)) {
-            textbox.text = line;
+            speechTextbox.text = line;
             yield return new WaitForSeconds(SECONDS_BETWEEN_TEXT);
         }
-        textbox.text = "";
+        speechTextbox.text = "";
+    }
+
+    void UpdateStatusBoard() {
+        var location = "Path";
+        var landmark = PlayerPositionToLandmark();
+        if (landmark != LandmarkType.None) {
+            location = landmark.ToString();
+        }
+
+        var inventory = "Gems Carrying: " + player.gemsCarrying;
+
+        var totalGemsCollected = "Gems Brought Back: " + town.gemsCollected;
+
+        var daysLeft = string.Format("{0} days until the end of the world", NUMBER_OF_DAYS-stage);
+
+        statusTextbox.text = string.Format("{0}\n{1}\n{2}\n{3}\n",
+                daysLeft, location, totalGemsCollected, inventory);
     }
 
 
     /***** END GAME LOGIC *****/
+    void MadeItBack() {
+        town.gemsCollected += player.gemsCarrying;
+    }
+
     void IncreaseDifficulty() {
+        SharedReset();
         num_enemies += MORE_ENEMIES_PER_STAGE;
-        gemPickedUp = false;
         stage++;
     }
 
     void ResetDifficulty() {
+        SharedReset();
         num_enemies = START_ENEMY_COUNT;
-        turns = 0;
+        /*turns = 0;*/
+        stage++;
+    }
+
+    void SharedReset() {
+        player.gemsCarrying = 0;
         gemPickedUp = false;
-        stage = 1;
     }
 
 
@@ -273,17 +342,46 @@ public class NetworkGame : MonoBehaviour {
     }
 
     bool WonLevel() {
-        if (!PlayerIsDead() && GemPickedUp() && PlayerInSafeZone()) {
+        if (!PlayerIsDead() && GemPickedUp() && PlayerInLandmark(LandmarkType.Residence)) {
             return true;
         }
         return false;
     }
 
     bool GemPickedUp() {
-        if (!gemPickedUp && Approx(player.position, gemPosition.ToVector())) {
-            gemPickedUp = true;
-        }
         return gemPickedUp;
+    }
+
+    bool PlayerInLandmark(LandmarkType ltype) {
+        if (player.edge.isVertex) {
+            foreach (var path in graph.GetAdjacentPaths(player.edge.p1)) {
+                if (path.landmarkType == ltype) {
+                    return true;
+                }
+            }
+        } else {
+            var path = graph.GetPath(player.edge);
+            if (path != null && path.landmarkType == ltype) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    LandmarkType PlayerPositionToLandmark() {
+        if (player.edge.isVertex) {
+            foreach (var path in graph.GetAdjacentPaths(player.edge.p1)) {
+                if (path.landmarkType != LandmarkType.None) {
+                    return path.landmarkType;
+                }
+            }
+        } else {
+            var path = graph.GetPath(player.edge);
+            if (path != null) {
+                return path.landmarkType;
+            }
+        }
+        return LandmarkType.None;
     }
 
     bool PlayerInSafeZone() {
@@ -373,7 +471,7 @@ public class GraphMatrix {
 
 public class GraphRenderer {
 
-    const float LINE_WIDTH_SCALE = 0.15f;
+    const float LINE_WIDTH_SCALE = 0.5f;
     const float LINE_LENGTH_SCALE = 1f;
 
     public Dictionary<Edge, RectRenderer> edgeRendererDict;
@@ -387,7 +485,8 @@ public class GraphRenderer {
 
             Vector2 center = edge.Midpoint()*LINE_LENGTH_SCALE;
             float length = LINE_LENGTH_SCALE; // only connected to adjacent vertices
-            float width = LINE_WIDTH_SCALE / path.length;
+            //float width = LINE_WIDTH_SCALE / path.length;
+            float width = 0.2f * path.length;
             float angle = edge.orientation == Orientation.Vertical ? 90 : 0;
 
             var color = Color.white;

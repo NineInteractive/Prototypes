@@ -120,6 +120,9 @@ public class Unit {
 }
 
 public class Player : Unit {
+
+    public int gemsCarrying;
+
     public Player(float x, float y, float speed): base(x, y, speed) {}
     public Player(Vector2 c, float speed): base(c, speed) {}
     public Player(Coord c, float speed) : base (c, speed) {}
