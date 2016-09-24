@@ -37,7 +37,7 @@ public class Unit {
         return origin == destination;
     }
 
-    public void Move(GraphMatrix graph, float deltaTime) {
+    public virtual void Move(GraphMatrix graph, float deltaTime) {
         /*
          * Assumes direction has been set
          */
@@ -129,6 +129,19 @@ public class Player : Unit {
 
     public void MoveToward(Direction dir) {
         destination = FindNextDestination(origin, dir);
+    }
+
+    public override void Move(GraphMatrix graph, float deltaTime) {
+        // atrocious. sigh.
+        if (origin == destination) return;
+
+        var cachedOrigin = origin; // copy
+
+        base.Move(graph, deltaTime);
+
+        if (origin == destination) {
+            graph.GetPath(new Edge(cachedOrigin, destination)).length+=1.5f;
+        }
     }
 }
 

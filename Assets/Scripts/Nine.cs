@@ -114,8 +114,8 @@ public struct Coord : System.IEquatable<Coord> {
 }
 
 public struct Edge {
-    public Coord p1;
-    public Coord p2;
+    public readonly Coord p1;
+    public readonly Coord p2;
 
     /***** INITIALIZER *****/
     public Edge(Coord p1, Coord p2) {
@@ -192,6 +192,13 @@ public struct Edge {
     public bool isNoneNegative {
         get {
             return p1.isNoneNegative && p2.isNoneNegative;
+        }
+    }
+
+    public override int GetHashCode() {
+        unchecked {
+            int hash = 17 * p1.GetHashCode() + 23 * p2.GetHashCode();
+            return hash;
         }
     }
 }

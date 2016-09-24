@@ -83,7 +83,7 @@ public class NetworkGame : MonoBehaviour {
     const int WIDTH = 8;
     const int HEIGHT = 8;
     const float CAPTURE_DISTANCE = 0.05f;
-    static int[] LENGTHS = {1, 1, 1, 4};
+    static int[] LENGTHS = {1, 1, 1, 1};
 
     /** Units **/
     const float PLAYER_SPEED = 1f;
@@ -176,12 +176,14 @@ public class NetworkGame : MonoBehaviour {
         if (town == null) town = new Town();
 
         /* Setup Graph */
-        graph = new GraphMatrix();
-        foreach (var e in Edge.EdgesBetweenCoords(new Coord(0, 0), new Coord(WIDTH, HEIGHT))) {
-            graph.AddPath(new Path(e, RandomLength()));
-        }
+        if (graph == null) {
+            graph = new GraphMatrix();
+            foreach (var e in Edge.EdgesBetweenCoords(new Coord(0, 0), new Coord(WIDTH, HEIGHT))) {
+                graph.AddPath(new Path(e, RandomLength()));
+            }
 
-        town.ApplyToGraph(graph);
+            town.ApplyToGraph(graph);
+        }
         var occupied = town.CreateBaseOccupied();
 
         /* Create Gem: possible to be run multiple times */
@@ -232,6 +234,7 @@ public class NetworkGame : MonoBehaviour {
 
         /** Move Player **/
         if (player.RestingAtVertex()) {
+            graphRenderer.RenderGraph(graph); Debug.Log("rerender graph");
 			while (DirectionUtil.FromInput() == Direction.None) {
 				yield return null;
 			}
@@ -471,47 +474,69 @@ public class GraphMatrix {
 
 public class GraphRenderer {
 
-    const float LINE_WIDTH_SCALE = 0.5f;
+    const float LINE_WIDTH_SCALE = 0.07f;
     const float LINE_LENGTH_SCALE = 1f;
 
+    /* multiple edges can map onto same path */
     public Dictionary<Edge, RectRenderer> edgeRendererDict;
 
     public void RenderGraph(GraphMatrix mat) {
+        if (edgeRendererDict != null) {
+            foreach (var pair in mat.edgeToPath) {
+                edgeRendererDict[pair.Key].property = RectPropertyFromPath(pair.Value);
+            }
+
+            return;
+        }
         edgeRendererDict = new Dictionary<Edge, RectRenderer>();
         foreach (var pair in mat.edgeToPath) {
             // draw edge
             var edge = pair.Key;
             var path = pair.Value;
 
-            Vector2 center = edge.Midpoint()*LINE_LENGTH_SCALE;
-            float length = LINE_LENGTH_SCALE; // only connected to adjacent vertices
-            //float width = LINE_WIDTH_SCALE / path.length;
-            float width = 0.2f * path.length;
-            float angle = edge.orientation == Orientation.Vertical ? 90 : 0;
+            var rectRend = ShapeGOFactory.InstantiateRect(RectPropertyFromPath(path));
 
-            var color = Color.white;
-            switch (path.landmarkType) {
-                case LandmarkType.Cave:
-                    color = Color.cyan;
-                    break;
-                case LandmarkType.Hill:
-                    color = Color.magenta;
-                    break;
-                case LandmarkType.Library:
-                    color = Color.green;
-                    break;
-                case LandmarkType.Residence:
-                    color = Color.yellow;
-                    break;
-                default:
-                    color = Color.white;
-                    break;
-            }
-
-            ShapeGOFactory.InstantiateShape(new RectProperty(
-                        center: center, height: length, width: width, angle: angle, color: color
-            ));
+            edgeRendererDict.Add(edge, rectRend);
         }
+    }
+
+    public void RerenderPath(Path path) {
+        RectRenderer rend;
+        if (edgeRendererDict.TryGetValue(path.edge, out rend)) {
+            rend.property = RectPropertyFromPath(path);
+        }
+    }
+
+    RectProperty RectPropertyFromPath(Path path) {
+        var edge = path.edge;
+        Vector2 center = edge.Midpoint()*LINE_LENGTH_SCALE;
+        float length = LINE_LENGTH_SCALE; // only connected to adjacent vertices
+        //float width = LINE_WIDTH_SCALE / path.length;
+        float width = LINE_WIDTH_SCALE * path.length;
+        float angle = edge.orientation == Orientation.Vertical ? 90 : 0;
+
+        var color = Color.white;
+        switch (path.landmarkType) {
+            case LandmarkType.Cave:
+                color = Color.cyan;
+                break;
+            case LandmarkType.Hill:
+                color = Color.magenta;
+                break;
+            case LandmarkType.Library:
+                color = Color.green;
+                break;
+            case LandmarkType.Residence:
+                color = Color.yellow;
+                break;
+            default:
+                color = Color.white;
+                break;
+        }
+
+        return (new RectProperty(
+                    center: center, height: length, width: width, angle: angle, color: color
+        ));
     }
 }
 

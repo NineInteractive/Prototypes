@@ -16,6 +16,10 @@ namespace NetworkGame {
             this.allowedUnitType = utype;
             this.landmarkType = ltype;
         }
+
+		public override int GetHashCode() {
+		  return edge.GetHashCode();
+		}
     }
 
     public enum LandmarkType {
