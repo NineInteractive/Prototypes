@@ -11,11 +11,11 @@ public class Textbox : MonoBehaviour {
 
     const float SECONDS_BETWEEN_TEXT = 3.5f;
 
-    Text uitext;
+    Typewriter uitext;
     Queue<string> thingsToSay = new Queue<string>();
 
     void Awake() {
-        uitext = GetComponent<Text>();
+        uitext = GetComponent<Typewriter>();
         StartCoroutine(_Speak());
     }
 
@@ -27,13 +27,17 @@ public class Textbox : MonoBehaviour {
     }
 
     IEnumerator _Speak() {
-        uitext.text = "";
+        uitext.BeginDisplayMode("");
+        var text = "";
         while (true) {
             if (thingsToSay.Count > 0) {
-                uitext.text = thingsToSay.Dequeue();
+                while (thingsToSay.Count > 0) {
+                text += thingsToSay.Dequeue() + "\n";
+                }
+                uitext.BeginDisplayMode(text);
                 yield return new WaitForSeconds(SECONDS_BETWEEN_TEXT);
             } else {
-                uitext.text = "";
+                uitext.BeginDisplayMode("");
                 yield return null;
             }
         }
