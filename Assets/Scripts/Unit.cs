@@ -119,32 +119,6 @@ public class Unit {
     }
 }
 
-public class Player : Unit {
-
-    public int gemsCarrying;
-
-    public Player(float x, float y, float speed): base(x, y, speed) {}
-    public Player(Vector2 c, float speed): base(c, speed) {}
-    public Player(Coord c, float speed) : base (c, speed) {}
-
-    public void MoveToward(Direction dir) {
-        destination = FindNextDestination(origin, dir);
-    }
-
-    public override void Move(GraphMatrix graph, float deltaTime) {
-        // atrocious. sigh.
-        if (origin == destination) return;
-
-        var cachedOrigin = origin; // copy
-
-        base.Move(graph, deltaTime);
-
-        if (origin == destination) {
-            graph.GetPath(new Edge(cachedOrigin, destination)).length+=1.5f;
-        }
-    }
-}
-
 public class Enemy : Unit {
     const float DETECTION_DISTANCE = 1.01f;
 
