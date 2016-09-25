@@ -13,17 +13,17 @@ public class NetworkGame : MonoBehaviour {
     const int WIDTH = 8;
     const int HEIGHT = 8;
     const float CAPTURE_DISTANCE = 0.05f;
-    static int[] LENGTHS = {1, 1, 1, 1};
+    static float[] LENGTHS = {1, 1, 1, 2};
 
     /** Units **/
     const float PLAYER_SPEED = 1f;
     const float ENEMY_MIN_SPEED = 0.5f;
     const float ENEMY_MAX_SPEED = 0.7f;
-    const int START_ENEMY_COUNT = 16;
+    const int START_ENEMY_COUNT = 1;
     const int MORE_ENEMIES_PER_day = 2;
 
     /** Dialogue **/
-    const float SECONDS_BETWEEN_TEXT = 3;
+    const float SECONDS_BETWEEN_TEXT = 5;
 
     /** Additional Game States **/
     const int NUMBER_OF_DAYS = 11;
@@ -167,6 +167,7 @@ public class NetworkGame : MonoBehaviour {
 
         /** Move Player **/
         if (player.RestingAtVertex()) {
+            player.EncounterLandmark(PlayerPositionToLandmark());
             graphRenderer.RenderGraph(graph);
 			while (DirectionUtil.FromInput() == Direction.None) {
 				yield return null;
@@ -339,7 +340,7 @@ public class NetworkGame : MonoBehaviour {
 
 
     /***** HELPERS *****/
-    int RandomLength() {
+    float RandomLength() {
         return LENGTHS[Random.Range(0, LENGTHS.Length)];
     }
 

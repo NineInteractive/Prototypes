@@ -8,6 +8,7 @@ using Nine;
 namespace NetworkGame {
 
 public class Town {
+    const float DEFAULT_LANDMARK_LENGTH = 1f;
     /***** PUBLIC: VARIABLES *****/
     /** Landmarks **/
     public List<Edge> residence = Edge.EdgesBetweenCoords(new Coord(1, 1), new Coord(3, 3));
@@ -72,6 +73,7 @@ public class Town {
             var p = graph.GetPath(e);
             p.landmarkType = ltype;
             p.allowedUnitType = allowed;
+            p.length = DEFAULT_LANDMARK_LENGTH;
         }
     }
 }
