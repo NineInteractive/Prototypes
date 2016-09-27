@@ -31,13 +31,13 @@ public class Textbox : MonoBehaviour {
         var text = "";
         while (true) {
             if (thingsToSay.Count > 0) {
+                uitext.FinishImmediate();
+                yield return new WaitForSeconds(SECONDS_BETWEEN_TEXT);
                 while (thingsToSay.Count > 0) {
-                text += thingsToSay.Dequeue() + "\n";
+                    text += "\n" + thingsToSay.Dequeue() + "\n";
                 }
                 uitext.BeginDisplayMode(text);
-                yield return new WaitForSeconds(SECONDS_BETWEEN_TEXT);
             } else {
-                uitext.BeginDisplayMode("");
                 yield return null;
             }
         }

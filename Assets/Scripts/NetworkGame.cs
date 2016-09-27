@@ -10,24 +10,25 @@ namespace NetworkGame {
 public class NetworkGame : MonoBehaviour {
     /***** CONSTS, STATIC VARS *****/
     /** Map **/
-    const int WIDTH = 8;
-    const int HEIGHT = 8;
-    const float CAPTURE_DISTANCE = 0.05f;
-    static float[] LENGTHS = {1, 1, 1, 2};
+    const int WIDTH = 5;
+    const int HEIGHT = 5;
+    const float CAPTURE_DISTANCE = 0.1f;
+    static float[] LENGTHS = {1, 1, 1, 1};
 
     /** Units **/
     const float PLAYER_SPEED = 1f;
-    const float ENEMY_MIN_SPEED = 0.5f;
-    const float ENEMY_MAX_SPEED = 0.7f;
-    const int START_ENEMY_COUNT = 1;
+    const float ENEMY_MIN_SPEED = 1f;
+    const float ENEMY_MAX_SPEED = 1f;
+    const int START_ENEMY_COUNT = 2;
     const int MORE_ENEMIES_PER_day = 2;
 
     /** Dialogue **/
     const float SECONDS_BETWEEN_TEXT = 5;
 
     /** Additional Game States **/
-    const int NUMBER_OF_DAYS = 11;
-    const int NUMBER_OF_GEMS = 5;
+    const int NUMBER_OF_DAYS = 4;
+    const int NUMBER_OF_GEMS = 3;
+    const int NUMBER_OF_STEPS_PER_DAY = 20;
 
 
     /***** PUBLIC: VARIABLES *****/
@@ -41,9 +42,8 @@ public class NetworkGame : MonoBehaviour {
 
     /** Game status **/
     int num_enemies = START_ENEMY_COUNT;
-    int turns;
-    int day = 0;
-    bool gemPickedUp = false;
+    int steps;
+    int day;
 
     /** Graph **/
     GraphMatrix graph;
@@ -54,8 +54,8 @@ public class NetworkGame : MonoBehaviour {
     List<Enemy> enemies;
 
     /** Town **/
-    List<Coord> gemPositions;
-    List<RectRenderer> gemRenderers;
+    List<Artifact> artifacts;
+    List<RectRenderer> artifactRenderers;
 
 
     /***** INITIALIZERS *****/
@@ -65,8 +65,6 @@ public class NetworkGame : MonoBehaviour {
 
 
     /***** MAIN LOGIC *****/
-
-
     IEnumerator Play() {
         while (true) {
             Setup();
@@ -94,8 +92,6 @@ public class NetworkGame : MonoBehaviour {
 
 
     /***** SETUP *****/
-
-
     void Setup() {
         /* Reset: if there are any renderers in the scene, destroy them */
         foreach (var ur in GameObject.FindObjectsOfType<UnitRenderer>()) {
@@ -120,13 +116,21 @@ public class NetworkGame : MonoBehaviour {
         var occupied = town.CreateBaseOccupied();
 
         /* Create Gem: possible to be run multiple times */
-        gemPositions = new List<Coord>();
-        gemRenderers = new List<RectRenderer>();
-        for (int i = 0; i < NUMBER_OF_GEMS; i++) {
-            gemPositions.Add(Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true));
-            gemRenderers.Add(ShapeGOFactory.InstantiateRect(
+        artifacts = new List<Artifact>();
+        artifactRenderers = new List<RectRenderer>();
+
+        var gemPosition = Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true);
+        var cupPosition = Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true);
+        var arrowPosition = Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true);
+
+        artifacts.Add(new Artifact(gemPosition, ArtifactType.Gem));
+        artifacts.Add(new Artifact(cupPosition, ArtifactType.Cup));
+        artifacts.Add(new Artifact(arrowPosition, ArtifactType.Arrow));
+
+        foreach (var artifact in artifacts) {
+            artifactRenderers.Add(ShapeGOFactory.InstantiateRect(
                     new RectProperty(
-                        center:gemPositions[i].ToVector(),
+                        center: artifact.position.ToVector(),
                         width: 0.2f,
                         height: 0.2f,
                         color: Color.red,
@@ -172,12 +176,12 @@ public class NetworkGame : MonoBehaviour {
 			while (DirectionUtil.FromInput() == Direction.None) {
 				yield return null;
 			}
-            turns++;
+            steps++;
             player.MoveToward(DirectionUtil.FromInput());
         }
         player.Move(graph, Time.deltaTime);
 
-        PickUpGem();
+        PickUpArtifact();
     }
 
     void PlayTurn2() {
@@ -188,22 +192,21 @@ public class NetworkGame : MonoBehaviour {
 
         /** Move Player **/
         if (player.RestingAtVertex()) {
-            turns++;
+            steps++;
             player.MoveToward(DirectionUtil.FromInput());
         }
         player.Move(graph, Time.deltaTime);
     }
 
-    void PickUpGem() {
-        for (int i = 0; i < gemPositions.Count; i++) {
-            var coord = gemPositions[i];
-            if (Approx(coord.ToVector(), player.position)) {
-                gemPositions.RemoveAt(i);
-                var renderer = gemRenderers[i];
+    void PickUpArtifact() {
+        for (int i = 0; i < artifacts.Count; i++) {
+            var artifact = artifacts[i];
+            if (Approx(artifact.position.ToVector(), player.position)) {
+                artifacts.RemoveAt(i);
+                var renderer = artifactRenderers[i];
                 Destroy(renderer.gameObject);
-                gemRenderers.RemoveAt(i);
-                player.gemsCarrying++;
-                gemPickedUp = true;
+                artifactRenderers.RemoveAt(i);
+                player.inventory.Add(artifact);
                 return;
             }
         }
@@ -221,27 +224,36 @@ public class NetworkGame : MonoBehaviour {
     }
 
     void UpdateStatusBoard() {
-        return;
         var location = "Path";
         var landmark = PlayerPositionToLandmark();
         if (landmark != LandmarkType.None) {
             location = landmark.ToString();
         }
 
-        var inventory = "Gems Carrying: " + player.gemsCarrying;
+        var inventory = "Carrying ";
+        if (player.inventory.Count == 0) {
+            inventory += "Nothing";
+        }
+        else {
+            foreach (var artifact in player.inventory) {
+                inventory += artifact.type + " ";
+            }
+        }
 
-        var totalGemsCollected = "Gems Brought Back: " + town.gemsCollected;
+        var totalGemsCollected = "Artifacts Brought Back: " + town.gemsCollected;
 
         var daysLeft = string.Format("{0} days until the end of the world", NUMBER_OF_DAYS-day);
 
-        statusTextbox.text = string.Format("{0}\n{1}\n{2}\n{3}\n",
-                daysLeft, location, totalGemsCollected, inventory);
+        var stepsLeft = string.Format("{0} steps until the end of the day", NUMBER_OF_STEPS_PER_DAY-steps);
+
+        statusTextbox.text = string.Format("{0}\n{1}\n{2}\nLocation: {3}\n{4}\n",
+                daysLeft, stepsLeft, inventory, location, totalGemsCollected);
     }
 
 
     /***** END GAME LOGIC *****/
     void MadeItBack() {
-        town.gemsCollected += player.gemsCarrying;
+        town.gemsCollected += player.inventory.Count;
     }
 
     void IncreaseDifficulty() {
@@ -253,13 +265,12 @@ public class NetworkGame : MonoBehaviour {
     void ResetDifficulty() {
         SharedReset();
         num_enemies = START_ENEMY_COUNT;
-        /*turns = 0;*/
         day++;
     }
 
     void SharedReset() {
-        player.gemsCarrying = 0;
-        gemPickedUp = false;
+        player.NewDay();
+        steps = 0;
     }
 
 
@@ -287,7 +298,7 @@ public class NetworkGame : MonoBehaviour {
     }
 
     bool GemPickedUp() {
-        return gemPickedUp;
+        return player.inventory.Count > 0;
     }
 
     bool PlayerInLandmark(LandmarkType ltype) {
@@ -351,7 +362,7 @@ public class NetworkGame : MonoBehaviour {
 
     /***** RENDERING *****/
     void ShowResult() {
-        Debug.Log("Survived for " + turns + " turns");
+        Debug.Log("Survived for " + steps + " steps");
     }
 
 }

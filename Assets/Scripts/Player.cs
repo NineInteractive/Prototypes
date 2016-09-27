@@ -1,13 +1,14 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using System.Collections.Generic;
 using Nine;
 
 namespace NetworkGame {
 
 public class Player : Unit {
 
-    public int gemsCarrying;
+    public List<Artifact> inventory = new List<Artifact>();
 
     Textbox speechTextbox;
 
@@ -32,6 +33,10 @@ public class Player : Unit {
         if (origin == destination) {
             //graph.GetPath(new Edge(cachedOrigin, destination)).length+=1.5f;
         }
+    }
+
+    public void NewDay() {
+        inventory.Clear();
     }
 
     public void EncounterNewDay(int day) {

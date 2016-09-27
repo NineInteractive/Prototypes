@@ -11,10 +11,10 @@ public class Town {
     const float DEFAULT_LANDMARK_LENGTH = 1f;
     /***** PUBLIC: VARIABLES *****/
     /** Landmarks **/
-    public List<Edge> residence = Edge.EdgesBetweenCoords(new Coord(1, 1), new Coord(3, 3));
-    public List<Edge> library = Edge.EdgesBetweenCoords(new Coord(5, 5), new Coord(7, 6));
-    public List<Edge> hill = Edge.EdgesBetweenCoords(new Coord(4, 7), new Coord(5, 8));
-    public List<Edge> cave = Edge.EdgesBetweenCoords(new Coord(1, 6), new Coord(2, 7));
+    public List<Edge> residence = Edge.EdgesBetweenCoords(new Coord(1, 1), new Coord(2, 2));
+    public List<Edge> library = Edge.EdgesBetweenCoords(new Coord(3, 3), new Coord(4, 4));
+    public List<Edge> hill = Edge.EdgesBetweenCoords(new Coord(2, 3), new Coord(3, 4));
+    public List<Edge> cave = Edge.EdgesBetweenCoords(new Coord(1, 3), new Coord(2, 4));
 
 
     /** Other game states **/
