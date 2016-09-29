@@ -19,8 +19,8 @@ public class NetworkGame : MonoBehaviour {
     const float PLAYER_SPEED = 1f;
     const float ENEMY_MIN_SPEED = 1f;
     const float ENEMY_MAX_SPEED = 1f;
-    const int START_ENEMY_COUNT = 2;
-    const int MORE_ENEMIES_PER_day = 2;
+    const int START_ENEMY_COUNT = 0;
+    const int MORE_ENEMIES_PER_day = 0;
 
     /** Dialogue **/
     const float SECONDS_BETWEEN_TEXT = 5;
@@ -80,12 +80,13 @@ public class NetworkGame : MonoBehaviour {
             if (WonLevel()) {
                 MadeItBack();
                 UpdateStatusBoard();
+                player.EncounterNewDay(day+1);
                 //yield return StartCoroutine(ScheherazadeSpeaks());
                 IncreaseDifficulty();
-                player.EncounterNewDay(day);
             } else {
                 UpdateStatusBoard();
                 ResetDifficulty();
+                player.EncounterNewDay(day+1);
             }
         }
     }

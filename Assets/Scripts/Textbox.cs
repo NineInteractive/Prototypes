@@ -9,7 +9,7 @@ namespace NetworkGame {
 [RequireComponent(typeof(Text))]
 public class Textbox : MonoBehaviour {
 
-    const float SECONDS_BETWEEN_TEXT = 3.5f;
+    const float SECONDS_BETWEEN_TEXT = 7f;
 
     Typewriter uitext;
     Queue<string> thingsToSay = new Queue<string>();
@@ -28,15 +28,10 @@ public class Textbox : MonoBehaviour {
 
     IEnumerator _Speak() {
         uitext.BeginDisplayMode("");
-        var text = "";
         while (true) {
             if (thingsToSay.Count > 0) {
-                uitext.FinishImmediate();
+                uitext.BeginDisplayMode(thingsToSay.Dequeue());
                 yield return new WaitForSeconds(SECONDS_BETWEEN_TEXT);
-                while (thingsToSay.Count > 0) {
-                    text += "\n" + thingsToSay.Dequeue() + "\n";
-                }
-                uitext.BeginDisplayMode(text);
             } else {
                 yield return null;
             }

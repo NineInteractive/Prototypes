@@ -43,12 +43,12 @@ public class Player : Unit {
         switch (day) {
             case 0:
                 Say("Scheherazade stands in the middle of the courtyard.",
-                    "\"It's morning. I must go to sleep.\"");
+                    "\"It's morning. I must go to sleep.\"",
+                    "She won't look at you.");
                 break;
 
             case 1:
-                Say("You return to scherazade, with a trinket on your palm.",
-                    "She puts it on reluctantly.",
+                Say(InventorySummary(),
                     "The following night, Scheherazade begins the story of the sage Devan and King Yunan.",
                     "But the morning overtakes her, and she lapses into silence.");
                 break;
@@ -56,6 +56,37 @@ public class Player : Unit {
             default:
                 break;
         }
+    }
+
+    string InventorySummary() {
+        if (inventory.Count > 0) {
+            return "You bring Scheherazade nothing.\nShe doesn't have much to say tonight.";
+        }
+
+        var summary = "You bring Scherazade ";
+        var artifactToString = new List<string>();
+
+        if (InventoryContains(ArtifactType.Gem)) {
+            artifactToString.Add("a gem");
+        }
+
+        if (InventoryContains(ArtifactType.Cup)) {
+            artifactToString.Add("a cup");
+        }
+
+        if (InventoryContains(ArtifactType.Arrow)) {
+            artifactToString.Add("an arrow");
+        }
+
+        summary += string.Join(", ", artifactToString.ToArray()) + ".";
+        return summary;
+    }
+
+    bool InventoryContains(ArtifactType type) {
+        foreach (var artifact in inventory) {
+            if (artifact.type == type) return true;
+        }
+        return false;
     }
 
     public void EncounterEnemy(Enemy enemy) {
