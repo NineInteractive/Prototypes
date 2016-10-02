@@ -10,18 +10,18 @@ namespace NetworkGame {
 [RequireComponent(typeof(Text))]
 public class Teleprompter : MonoBehaviour {
 
-    public float secondsBetweenLines = 3f;
-    public float secondsToDisplayLine = 2f;
+    public float secondsBetweenLines = 2f;
+    public float charactersPerSecond = 20f;
     public Color startColor = Color.black;
     public Color endColor = Color.white;
     public int maxNumberOfLines = 20;
 
-    // Typewriter uitext;
     Text textbox;
     Queue<string> linesToDisplay = new Queue<string>();
     string linesDisplayed = "";
     bool displayImmediately = false;
     int numberOfLines;
+    bool _displaying;
 
     void Awake() {
         textbox = GetComponent<Text>();
@@ -43,9 +43,13 @@ public class Teleprompter : MonoBehaviour {
     IEnumerator Roll() {
         while (true) {
             if (linesToDisplay.Count > 0) {
-                float startTime = Time.time;
+                _displaying = true;
                 var line = linesToDisplay.Dequeue();
-                while (Time.time < startTime + secondsBetweenLines) {
+
+                float startTime = Time.time;
+                float endTime = startTime + line.Length / charactersPerSecond;
+
+                while (Time.time < endTime) {
                     if (displayImmediately) break;
                     textbox.text = ApplyFade(line, Time.time-startTime) + "\n\n" + linesDisplayed;
                     yield return null;
@@ -54,8 +58,9 @@ public class Teleprompter : MonoBehaviour {
                 textbox.text = linesDisplayed;
                 displayImmediately = false;
                 numberOfLines++;
-                yield return null;
+                yield return new WaitForSeconds(secondsBetweenLines);
             } else {
+                _displaying = false;
                 if (numberOfLines > maxNumberOfLines) {
                     // max 100 chars per line? doesn't need to be exact
                     linesDisplayed = linesDisplayed.Substring(0, maxNumberOfLines * 100);
@@ -70,17 +75,16 @@ public class Teleprompter : MonoBehaviour {
         var rtfLine = new StringBuilder();
 
         var chars = line.ToCharArray();
-        for (int i = 0; i < chars.Length; i++) {
-            var charLocation = ((float)i)/line.Length;
-            var progress = dtime/secondsToDisplayLine;
+        for (int charIdx = 0; charIdx < chars.Length; charIdx++) {
+            float fullyDisplayedCharIdx = charactersPerSecond * dtime;
             float opacity;
-            if (charLocation < progress) {
+            if (charIdx < charactersPerSecond * dtime) {
                 opacity = 1;
             } else {
-                opacity = 1 - (charLocation - progress) * (secondsToDisplayLine);
+                opacity = 1 - Mathf.Min((charIdx-fullyDisplayedCharIdx)/charactersPerSecond, 1);
             }
             var color = Color.Lerp(startColor, endColor, opacity);
-            var rtfChar = string.Format("<color=#{0}>{1}</color>", ColorToHex(color), chars[i]);
+            var rtfChar = string.Format("<color=#{0}>{1}</color>", ColorToHex(color), chars[charIdx]);
             rtfLine.Append(rtfChar);
         }
 
@@ -92,6 +96,12 @@ public class Teleprompter : MonoBehaviour {
             color.g.ToString("X2") + color.b.ToString("X2") +
             color.a.ToString("X2");
 	    return hex;
+    }
+
+    public bool displaying {
+        get {
+            return _displaying;
+        }
     }
 }
 }
