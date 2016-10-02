@@ -10,12 +10,12 @@ public class Player : Unit {
 
     public List<Artifact> inventory = new List<Artifact>();
 
-    Textbox speechTextbox;
+    Teleprompter speechTeleprompter;
 
-    public Player(float x, float y, float speed, Textbox textbox): this(new Coord(x, y), speed, textbox) {}
-    public Player(Vector2 c, float speed, Textbox textbox): this(new Coord(c.x, c.y), speed, textbox) {}
-    public Player(Coord c, float speed, Textbox textbox) : base(c, speed) {
-        speechTextbox = textbox;
+    public Player(float x, float y, float speed, Teleprompter teleprompter): this(new Coord(x, y), speed, teleprompter) {}
+    public Player(Vector2 c, float speed, Teleprompter teleprompter): this(new Coord(c.x, c.y), speed, teleprompter) {}
+    public Player(Coord c, float speed, Teleprompter teleprompter) : base(c, speed) {
+        speechTeleprompter = teleprompter;
     }
 
     public void MoveToward(Direction dir) {
@@ -127,7 +127,7 @@ public class Player : Unit {
     }
 
     void Say(params string[] speech) {
-        speechTextbox.Speak(speech);
+        speechTeleprompter.DisplayLines(speech);
     }
 }
 

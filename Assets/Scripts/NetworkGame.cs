@@ -33,8 +33,7 @@ public class NetworkGame : MonoBehaviour {
 
     /***** PUBLIC: VARIABLES *****/
     public Text statusTextbox;
-    public Text speechTextbox;
-    public Textbox textbox;
+    public Teleprompter teleprompter;
 
 
     /***** PRIVATE: VARIABLES *****/
@@ -69,14 +68,17 @@ public class NetworkGame : MonoBehaviour {
         while (true) {
             Setup();
             UpdateStatusBoard();
+
             player.EncounterNewDay(day);
+
             do {
+                // TODO blocking display
                 yield return StartCoroutine(PlayTurn());
-                /*PlayTurn2();*/
-                yield return null;
                 UpdateStatusBoard();
             } while (!(PlayerIsDead() || WonLevel()));
+
             ShowResult();
+
             if (WonLevel()) {
                 MadeItBack();
                 UpdateStatusBoard();
@@ -141,7 +143,7 @@ public class NetworkGame : MonoBehaviour {
         }
 
         /* Create Units */
-        player = new Player(Town.CoordsForLandmark(town.residence).GetRandomElement<Coord>(), PLAYER_SPEED, textbox);
+        player = new Player(Town.CoordsForLandmark(town.residence).GetRandomElement<Coord>(), PLAYER_SPEED, teleprompter);
         enemies = new List<Enemy>();
         for (int i=0; i<num_enemies; i++) {
             var ene = new Enemy(Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true),
@@ -161,9 +163,8 @@ public class NetworkGame : MonoBehaviour {
         graphRenderer.RenderGraph(graph);
     }
 
+
     /***** PLAY LOGIC *****/
-
-
     IEnumerator PlayTurn() {
         /** Move Enemies **/
         foreach (var e in enemies) {
@@ -215,6 +216,7 @@ public class NetworkGame : MonoBehaviour {
 
     /***** SCHEHERAZADE *****/
     IEnumerator ScheherazadeSpeaks() {
+        /*
         speechTextbox.text = "";
         yield return new WaitForSeconds(0.4f);
         foreach (var line in DialogueSystem.DialogueForStage(day)) {
@@ -222,6 +224,8 @@ public class NetworkGame : MonoBehaviour {
             yield return new WaitForSeconds(SECONDS_BETWEEN_TEXT);
         }
         speechTextbox.text = "";
+        */
+        yield return null;
     }
 
     void UpdateStatusBoard() {
