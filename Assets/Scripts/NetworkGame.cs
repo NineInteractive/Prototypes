@@ -72,7 +72,6 @@ public class NetworkGame : MonoBehaviour {
             player.EncounterNewDay(day);
 
             do {
-                // TODO blocking display
                 yield return StartCoroutine(PlayTurn());
                 UpdateStatusBoard();
             } while (!(PlayerIsDead() || WonLevel()));
@@ -175,7 +174,8 @@ public class NetworkGame : MonoBehaviour {
         if (player.RestingAtVertex()) {
             player.EncounterLandmark(PlayerPositionToLandmark());
             graphRenderer.RenderGraph(graph);
-			while (DirectionUtil.FromInput() == Direction.None) {
+			while (DirectionUtil.FromInput() == Direction.None || teleprompter.displaying) {
+                if (DirectionUtil.FromInput() != Direction.None) teleprompter.DisplayImmediately();
 				yield return null;
 			}
             steps++;

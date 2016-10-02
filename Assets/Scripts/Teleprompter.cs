@@ -31,6 +31,7 @@ public class Teleprompter : MonoBehaviour {
     }
 
     public void DisplayLines(params string[] lines) {
+        _displaying = true;
         foreach (var line in lines) {
             linesToDisplay.Enqueue(line);
         }
@@ -58,12 +59,17 @@ public class Teleprompter : MonoBehaviour {
                 textbox.text = linesDisplayed;
                 displayImmediately = false;
                 numberOfLines++;
-                yield return new WaitForSeconds(secondsBetweenLines);
+
+                // if there's additional line to display, wait
+                if (linesToDisplay.Count > 0) {
+                    yield return new WaitForSeconds(secondsBetweenLines);
+                }
             } else {
                 _displaying = false;
                 if (numberOfLines > maxNumberOfLines) {
                     // max 100 chars per line? doesn't need to be exact
                     linesDisplayed = linesDisplayed.Substring(0, maxNumberOfLines * 100);
+                    numberOfLines = 0;
                 }
                 displayImmediately = false;
                 yield return null;
