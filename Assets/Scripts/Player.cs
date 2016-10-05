@@ -126,6 +126,33 @@ public class Player : Unit {
         }
     }
 
+    public void EncounterNewTile(int stepsLeft) {
+        switch (stepsLeft) {
+            case 20:
+                Say("You head out with a little bit of hope.");
+                break;
+
+            case 15:
+                Say("The sun is directly above you. You feel dizzy.");
+                break;
+
+            case 10:
+                Say("Afternoon. Here you try to live out another day, discover something new to bring.");
+                break;
+
+            case 5:
+                Say("The day is almost over, the sky is turning bright orange.");
+                break;
+
+            case 0:
+                Say("It's time to return home.");
+                break;
+
+            default:
+                break;
+        }
+    }
+
     void Say(params string[] speech) {
         speechTeleprompter.DisplayLines(speech);
     }

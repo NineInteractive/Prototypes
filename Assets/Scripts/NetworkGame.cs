@@ -10,8 +10,8 @@ namespace NetworkGame {
 public class NetworkGame : MonoBehaviour {
     /***** CONSTS, STATIC VARS *****/
     /** Map **/
-    const int WIDTH = 5;
-    const int HEIGHT = 5;
+    const int WIDTH = 10;
+    const int HEIGHT = 10;
     const float CAPTURE_DISTANCE = 0.1f;
     static float[] LENGTHS = {1, 1, 1, 1};
 
@@ -28,7 +28,7 @@ public class NetworkGame : MonoBehaviour {
     /** Additional Game States **/
     const int NUMBER_OF_DAYS = 4;
     const int NUMBER_OF_GEMS = 3;
-    const int NUMBER_OF_STEPS_PER_DAY = 20;
+    const int NUMBER_OF_STEPS_PER_DAY = 21;
 
 
     /***** PUBLIC: VARIABLES *****/
@@ -76,6 +76,7 @@ public class NetworkGame : MonoBehaviour {
                 UpdateStatusBoard();
             } while (!(PlayerIsDead() || WonLevel()));
 
+            player.EncounterNewTile(NUMBER_OF_STEPS_PER_DAY - steps);
             ShowResult();
 
             if (WonLevel()) {
@@ -172,7 +173,9 @@ public class NetworkGame : MonoBehaviour {
 
         /** Move Player **/
         if (player.RestingAtVertex()) {
+            ModifyVisibility();
             player.EncounterLandmark(PlayerPositionToLandmark());
+            player.EncounterNewTile(NUMBER_OF_STEPS_PER_DAY - steps);
             graphRenderer.RenderGraph(graph);
 			while (DirectionUtil.FromInput() == Direction.None || teleprompter.displaying) {
                 if (DirectionUtil.FromInput() != Direction.None) teleprompter.DisplayImmediately();
@@ -184,6 +187,23 @@ public class NetworkGame : MonoBehaviour {
         player.Move(graph, Time.deltaTime);
 
         PickUpArtifact();
+    }
+
+    void ModifyVisibility() {
+        // for each adjacent 3x3, make it visible
+        // for each 5-3x5-3, make it grayed
+        // rerender graph
+        foreach (var path in graph.GetAdjacentPaths(player.origin)) {
+            foreach (var path2 in graph.GetAdjacentPaths(path.edge.p1)) {
+                if (path2.visibility != Visibility.Revealed) path2.visibility = Visibility.Grayed;
+            }
+            foreach (var path2 in graph.GetAdjacentPaths(path.edge.p2)) {
+                if (path2.visibility != Visibility.Revealed) path2.visibility = Visibility.Grayed;
+            }
+        }
+        foreach (var path in graph.GetAdjacentPaths(player.origin)) {
+            path.visibility = Visibility.Revealed;
+        }
     }
 
     void PlayTurn2() {
@@ -296,7 +316,8 @@ public class NetworkGame : MonoBehaviour {
     }
 
     bool WonLevel() {
-        if (!PlayerIsDead() && GemPickedUp() && PlayerInLandmark(LandmarkType.Residence)) {
+        if ((!PlayerIsDead() && GemPickedUp() && PlayerInLandmark(LandmarkType.Residence))
+            || NUMBER_OF_STEPS_PER_DAY - steps == 0) {
             return true;
         }
         return false;

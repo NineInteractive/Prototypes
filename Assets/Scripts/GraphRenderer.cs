@@ -69,6 +69,18 @@ public class GraphRenderer {
                 break;
         }
 
+        switch (path.visibility) {
+            case Visibility.Hidden:
+                color.a = 0;
+                break;
+            case Visibility.Grayed:
+                color.a = 0.03f;
+                break;
+            case Visibility.Revealed:
+                color.a = 1;
+                break;
+        }
+
         return (new RectProperty(
                     center: center, height: length, width: width, angle: angle, color: color
         ));
