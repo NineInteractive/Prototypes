@@ -44,10 +44,12 @@ public class GraphRenderer {
 
     RectProperty RectPropertyFromPath(Path path) {
         var edge = path.edge;
-        Vector2 center = edge.Midpoint()*LINE_LENGTH_SCALE;
+        Vector2 center = edge.p1.ToVector() * LINE_LENGTH_SCALE;
         float length = LINE_LENGTH_SCALE; // only connected to adjacent vertices
         //float width = LINE_WIDTH_SCALE / path.length;
         float width = LINE_WIDTH_SCALE * path.length;
+        width = length*0.8f;
+        length = length * 0.8f;
         float angle = edge.orientation == Orientation.Vertical ? 90 : 0;
 
         var color = Color.white;
@@ -77,7 +79,11 @@ public class GraphRenderer {
                 color.a = 0.03f;
                 break;
             case Visibility.Revealed:
-                color.a = 1;
+                if (Random.value < 0.7f) {
+                    color.a = 0;
+                } else {
+                    color.a = 1;
+                }
                 break;
         }
 

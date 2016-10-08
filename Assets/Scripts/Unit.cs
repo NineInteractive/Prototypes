@@ -37,7 +37,7 @@ public class Unit {
         return origin == destination;
     }
 
-    public virtual void Move(GraphMatrix graph, float deltaTime) {
+    public virtual void Move(World world, float deltaTime) {
         /*
          * Assumes direction has been set
          */
@@ -45,11 +45,10 @@ public class Unit {
         if (origin == destination) return;
 
         /** Calculate Displacement for Current Time Unit **/
-        var edge = new Edge(origin, destination);
-        var len = graph.GetLength(edge);
-        var displacement = deltaTime * speed / len * SPEED_MULTIPLIER;
+        var displacement = deltaTime * speed * SPEED_MULTIPLIER;
 
         /** Check Destination Arrival: If True, set origin = destination and pass **/
+        // TODO scale
         if (Vector2.Distance(destination.ToVector(), position) < displacement) {
             origin = destination;
             position = destination.ToVector();
@@ -129,6 +128,7 @@ public class Enemy : Unit {
     public Enemy(Vector2 c, float speed): base(c, speed) {}
     public Enemy(Coord c, float speed) : base (c, speed) {}
 
+    /*
     public void Chase(
             Player player, GraphMatrix graph,
             float deltaTime, bool forceChase=false,
@@ -145,6 +145,7 @@ public class Enemy : Unit {
             active = true;
         }
     }
+    */
 
     bool NearPlayer(Player player, GraphMatrix graph) {
         return Vector2.Distance(player.position, position) < DETECTION_DISTANCE;

@@ -22,8 +22,6 @@ public class NetworkGame : MonoBehaviour {
     const int START_ENEMY_COUNT = 0;
     const int MORE_ENEMIES_PER_day = 0;
 
-    /** Dialogue **/
-    const float SECONDS_BETWEEN_TEXT = 5;
 
     /** Additional Game States **/
     const int NUMBER_OF_DAYS = 4;
@@ -37,7 +35,7 @@ public class NetworkGame : MonoBehaviour {
 
 
     /***** PRIVATE: VARIABLES *****/
-    Town town;
+    World world;
 
     /** Game status **/
     int num_enemies = START_ENEMY_COUNT;
@@ -45,8 +43,7 @@ public class NetworkGame : MonoBehaviour {
     int day;
 
     /** Graph **/
-    GraphMatrix graph;
-    GraphRenderer graphRenderer;
+    WorldRenderer worldRenderer;
 
     /** Units **/
     Player player;
@@ -105,20 +102,13 @@ public class NetworkGame : MonoBehaviour {
         }
 
         /* Create Town */
-        if (town == null) town = new Town();
-
-        /* Setup Graph */
-        if (graph == null) {
-            graph = new GraphMatrix();
-            foreach (var e in Edge.EdgesBetweenCoords(new Coord(0, 0), new Coord(WIDTH, HEIGHT))) {
-                graph.AddPath(new Path(e, RandomLength()));
-            }
-
-            town.ApplyToGraph(graph);
+        if (world == null) {
+            world = new World();
+            world.GenerateWorld();
         }
-        var occupied = town.CreateBaseOccupied();
 
         /* Create Gem: possible to be run multiple times */
+        /*
         artifacts = new List<Artifact>();
         artifactRenderers = new List<RectRenderer>();
 
@@ -141,42 +131,28 @@ public class NetworkGame : MonoBehaviour {
                         layer: -2
                     )));
         }
+        */
 
         /* Create Units */
-        player = new Player(Town.CoordsForLandmark(town.residence).GetRandomElement<Coord>(), PLAYER_SPEED, teleprompter);
-        enemies = new List<Enemy>();
-        for (int i=0; i<num_enemies; i++) {
-            var ene = new Enemy(Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true),
-                    Random.Range(ENEMY_MIN_SPEED, ENEMY_MAX_SPEED));
-            enemies.Add(ene);
-        }
+        player = new Player(world.centerCoord, PLAYER_SPEED, teleprompter);
 
         /* Create Unit Renderers */
         new GameObject().AddComponent<UnitRenderer>().unit = player;
-        foreach (var e in enemies) {
-            new GameObject().AddComponent<UnitRenderer>().unit = e;
-        }
-
 
         /* Render Graph */
-        graphRenderer = new GraphRenderer();
-        graphRenderer.RenderGraph(graph);
+        worldRenderer = new WorldRenderer();
+        worldRenderer.RenderWorld(world);
     }
 
 
     /***** PLAY LOGIC *****/
     IEnumerator PlayTurn() {
-        /** Move Enemies **/
-        foreach (var e in enemies) {
-            e.Chase(player, graph, Time.deltaTime, GemPickedUp(), PlayerInSafeZone());
-        }
-
         /** Move Player **/
         if (player.RestingAtVertex()) {
             ModifyVisibility();
-            player.EncounterLandmark(PlayerPositionToLandmark());
-            player.EncounterNewTile(NUMBER_OF_STEPS_PER_DAY - steps);
-            graphRenderer.RenderGraph(graph);
+            player.EncounterTile(PlayerPositionToLandmark());
+            //player.EncounterNewTile(NUMBER_OF_STEPS_PER_DAY - steps);
+            worldRenderer.RenderWorld(world);
 			while (DirectionUtil.FromInput() == Direction.None || teleprompter.displaying) {
                 if (DirectionUtil.FromInput() != Direction.None) teleprompter.DisplayImmediately();
 				yield return null;
@@ -184,7 +160,7 @@ public class NetworkGame : MonoBehaviour {
             steps++;
             player.MoveToward(DirectionUtil.FromInput());
         }
-        player.Move(graph, Time.deltaTime);
+        player.Move(world, Time.deltaTime);
 
         PickUpArtifact();
     }
@@ -193,34 +169,21 @@ public class NetworkGame : MonoBehaviour {
         // for each adjacent 3x3, make it visible
         // for each 5-3x5-3, make it grayed
         // rerender graph
-        foreach (var path in graph.GetAdjacentPaths(player.origin)) {
-            foreach (var path2 in graph.GetAdjacentPaths(path.edge.p1)) {
-                if (path2.visibility != Visibility.Revealed) path2.visibility = Visibility.Grayed;
+        foreach (var tile in world.GetAdjacentTiles(player.origin)) {
+            foreach (var tile2 in world.GetAdjacentTiles(tile.position)) {
+                if (tile2.visibility != Visibility.Revealed) tile2.visibility = Visibility.Grayed;
             }
-            foreach (var path2 in graph.GetAdjacentPaths(path.edge.p2)) {
-                if (path2.visibility != Visibility.Revealed) path2.visibility = Visibility.Grayed;
+            foreach (var tile2 in world.GetAdjacentTiles(tile.position)) {
+                if (tile2.visibility != Visibility.Revealed) tile2.visibility = Visibility.Grayed;
             }
         }
-        foreach (var path in graph.GetAdjacentPaths(player.origin)) {
-            path.visibility = Visibility.Revealed;
+        foreach (var tile in world.GetAdjacentTiles(player.origin)) {
+            tile.visibility = Visibility.Revealed;
         }
-    }
-
-    void PlayTurn2() {
-        /** Move Enemies **/
-        foreach (var e in enemies) {
-            e.Chase(player, graph, Time.deltaTime, GemPickedUp());
-        }
-
-        /** Move Player **/
-        if (player.RestingAtVertex()) {
-            steps++;
-            player.MoveToward(DirectionUtil.FromInput());
-        }
-        player.Move(graph, Time.deltaTime);
     }
 
     void PickUpArtifact() {
+        return;
         for (int i = 0; i < artifacts.Count; i++) {
             var artifact = artifacts[i];
             if (Approx(artifact.position.ToVector(), player.position)) {
@@ -249,6 +212,7 @@ public class NetworkGame : MonoBehaviour {
     }
 
     void UpdateStatusBoard() {
+        /*
         var location = "Path";
         var landmark = PlayerPositionToLandmark();
         if (landmark != LandmarkType.None) {
@@ -265,6 +229,7 @@ public class NetworkGame : MonoBehaviour {
             }
         }
 
+        /*
         var totalGemsCollected = "Artifacts Brought Back: " + town.gemsCollected;
 
         var daysLeft = string.Format("{0} days until the end of the world", NUMBER_OF_DAYS-day);
@@ -273,12 +238,13 @@ public class NetworkGame : MonoBehaviour {
 
         statusTextbox.text = string.Format("{0}\n{1}\n{2}\nLocation: {3}\n{4}\n",
                 daysLeft, stepsLeft, inventory, location, totalGemsCollected);
+                */
     }
 
 
     /***** END GAME LOGIC *****/
     void MadeItBack() {
-        town.gemsCollected += player.inventory.Count;
+        //town.gemsCollected += player.inventory.Count;
     }
 
     void IncreaseDifficulty() {
@@ -301,22 +267,11 @@ public class NetworkGame : MonoBehaviour {
 
     /***** PROPERTIES - GAME STATUS *****/
     bool PlayerIsDead() {
-        foreach (Enemy e in enemies) {
-            if (e != null && Approx(e.position, player.position)) {
-                return true;
-            }
-        }
-
-        /*HAX*/
-        if (num_enemies+3 >= (WIDTH+1) * (HEIGHT+1)) {
-            return true;
-        }
-
         return false;
     }
 
     bool WonLevel() {
-        if ((!PlayerIsDead() && GemPickedUp() && PlayerInLandmark(LandmarkType.Residence))
+        if ((!PlayerIsDead() && GemPickedUp() && PlayerInLandmark(TileType.Castle))
             || NUMBER_OF_STEPS_PER_DAY - steps == 0) {
             return true;
         }
@@ -327,39 +282,17 @@ public class NetworkGame : MonoBehaviour {
         return player.inventory.Count > 0;
     }
 
-    bool PlayerInLandmark(LandmarkType ltype) {
-        if (player.edge.isVertex) {
-            foreach (var path in graph.GetAdjacentPaths(player.edge.p1)) {
-                if (path.landmarkType == ltype) {
-                    return true;
-                }
-            }
-        } else {
-            var path = graph.GetPath(player.edge);
-            if (path != null && path.landmarkType == ltype) {
-                return true;
-            }
-        }
-        return false;
+    bool PlayerInLandmark(TileType ltype) {
+        return ltype == PlayerPositionToLandmark();
     }
 
-    LandmarkType PlayerPositionToLandmark() {
-        if (player.edge.isVertex) {
-            foreach (var path in graph.GetAdjacentPaths(player.edge.p1)) {
-                if (path.landmarkType != LandmarkType.None) {
-                    return path.landmarkType;
-                }
-            }
-        } else {
-            var path = graph.GetPath(player.edge);
-            if (path != null) {
-                return path.landmarkType;
-            }
-        }
-        return LandmarkType.None;
+    TileType PlayerPositionToLandmark() {
+        return world.tiles[player.destination].type;
     }
 
     bool PlayerInSafeZone() {
+        return true;
+        /*
         if (player.edge.isVertex) {
             foreach (var path in graph.GetAdjacentPaths(player.edge.p1)) {
                 if (path.allowedUnitType == UnitType.Player) {
@@ -373,6 +306,7 @@ public class NetworkGame : MonoBehaviour {
             }
         }
         return false;
+        */
     }
 
 

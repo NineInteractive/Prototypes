@@ -22,17 +22,19 @@ public class Player : Unit {
         destination = FindNextDestination(origin, dir);
     }
 
-    public override void Move(GraphMatrix graph, float deltaTime) {
+    public override void Move(World world, float deltaTime) {
         // atrocious. sigh.
         if (origin == destination) return;
 
         var cachedOrigin = origin; // copy
 
-        base.Move(graph, deltaTime);
+        base.Move(world, deltaTime);
 
+        /* do something?
         if (origin == destination) {
             //graph.GetPath(new Edge(cachedOrigin, destination)).length+=1.5f;
         }
+        */
     }
 
     public void NewDay() {
@@ -91,6 +93,41 @@ public class Player : Unit {
 
     public void EncounterEnemy(Enemy enemy) {
         Say("I greet the old king.", "He takes the gem away from you.");
+    }
+
+    public void EncounterTile(TileType tileType) {
+        /*
+        switch (landmarkType) {
+            case LandmarkType.Cave:
+                Say("The cave is empty.");
+                break;
+
+            case LandmarkType.Hill:
+                Say("From the hilltop, you can see the high balustrade of your palace.");
+                break;
+
+            case LandmarkType.Library:
+                Say("This is a library. The old king refuses to enter.");
+                break;
+
+            case LandmarkType.Residence:
+                Say("Back home.");
+                break;
+
+            case LandmarkType.None:
+                if (Random.value < 0.05f) {
+                    if (Random.value < 0.5f) {
+                        Say("The sun is right above you.");
+                    } else {
+                        Say("You briefly forget about Scherazade.");
+                    }
+                }
+                break;
+
+            default:
+                break;
+        }
+        */
     }
 
     public void EncounterLandmark(LandmarkType landmarkType) {

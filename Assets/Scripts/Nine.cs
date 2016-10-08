@@ -3,6 +3,37 @@ using System.Collections.Generic;
 
 namespace Nine {
 
+[System.Serializable]
+public class IntRange {
+    public int min; 			//Minimum value for our Count class.
+    public int max; 			//Maximum value for our Count class.
+
+    //Assignment constructor.
+    public IntRange (int min, int max) {
+        this.min = min;
+        this.max = max;
+    }
+
+    public int RandomValue() {
+        return Random.Range(min, max);
+    }
+}
+
+public class FloatRange {
+    public float min; 			//Minimum value for our Count class.
+    public float max; 			//Maximum value for our Count class.
+
+    //Assignment constructor.
+    public FloatRange (float min, float max) {
+        this.min = min;
+        this.max = max;
+    }
+
+    public float RandomValue() {
+        return Random.Range(min, max);
+    }
+}
+
 public struct Coord : System.IEquatable<Coord> {
     /***** PUBLIC: VARIABLES *****/
     public int x;
@@ -49,6 +80,10 @@ public struct Coord : System.IEquatable<Coord> {
         return new Coord(x+dx, y+dy);
     }
 
+    public Coord Plus(Coord c) {
+        return MovedBy(c.x, c.y);
+    }
+
     public Coord AdjacentCoord(Direction dir) {
         Coord c = this;
         switch (dir) {
@@ -71,6 +106,36 @@ public struct Coord : System.IEquatable<Coord> {
         return c;
     }
 
+    public List<Coord> AdjacentCoords(
+            int maxX=int.MaxValue, // exclusive
+            int maxY=int.MaxValue, // exclusive
+            bool includeDiagonal=false,
+            bool includeSelf=false) {
+
+        var coords = new List<Coord>();
+        if (includeDiagonal) {
+            for (int i = -1; i<=1; i++) {
+                for (int j = -1; j<=1; j++) {
+                    coords.Add(MovedBy(i, j));
+                }
+            }
+        } else {
+            coords.Add(AdjacentCoord(Direction.Up));
+            coords.Add(AdjacentCoord(Direction.Down));
+            coords.Add(AdjacentCoord(Direction.Left));
+            coords.Add(AdjacentCoord(Direction.Right));
+            coords.Add(this);
+        }
+
+        if (!includeSelf) {
+            coords.Remove(this);
+        }
+
+        return coords.FindAll(delegate(Coord c) {
+            return c.Bounded(maxX, maxY);
+        });
+    }
+
     public Edge AdjacentEdge(Direction dir) {
         return new Edge(this, AdjacentCoord(dir));
     }
@@ -82,6 +147,10 @@ public struct Coord : System.IEquatable<Coord> {
         edges[2] = AdjacentEdge(Direction.Down);
         edges[3] = AdjacentEdge(Direction.Left);
         return edges;
+    }
+
+    public bool Bounded(int width, int height) {
+        return x >= 0 && y >= 0 && x < width && y < height;
     }
 
     /***** PUBLIC: PROPERTIES *****/
