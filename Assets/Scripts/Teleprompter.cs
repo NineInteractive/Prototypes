@@ -19,9 +19,7 @@ public class Teleprompter : MonoBehaviour {
     Text textbox;
     Queue<string> linesToDisplay = new Queue<string>();
     string linesDisplayed = "";
-    bool displayImmediately = false;
     int numberOfLines;
-    bool _displaying;
 
     void Awake() {
         textbox = GetComponent<Text>();
@@ -30,50 +28,43 @@ public class Teleprompter : MonoBehaviour {
         StartCoroutine(Roll());
     }
 
-    public void DisplayLines(params string[] lines) {
-        _displaying = true;
+    public IEnumerator DisplayLines(params string[] lines) {
+        if (lines == null) lines = new string[]{};
+
         foreach (var line in lines) {
             linesToDisplay.Enqueue(line);
         }
-    }
-
-    public void DisplayImmediately() {
-        displayImmediately = true;
+        yield return StartCoroutine(Roll());
     }
 
     IEnumerator Roll() {
-        while (true) {
-            if (linesToDisplay.Count > 0) {
-                _displaying = true;
-                var line = linesToDisplay.Dequeue();
+        if (linesToDisplay.Count > 0) {
+            var line = linesToDisplay.Dequeue();
 
-                float startTime = Time.time;
-                float endTime = startTime + line.Length / charactersPerSecond;
+            float startTime = Time.time;
+            float endTime = startTime + line.Length / charactersPerSecond;
 
-                while (Time.time < endTime) {
-                    if (displayImmediately) break;
-                    textbox.text = ApplyFade(line, Time.time-startTime) + "\n\n" + linesDisplayed;
-                    yield return null;
-                }
-                linesDisplayed = line + "\n\n"+ linesDisplayed;
-                textbox.text = linesDisplayed;
-                displayImmediately = false;
-                numberOfLines++;
-
-                // if there's additional line to display, wait
-                if (linesToDisplay.Count > 0) {
-                    yield return new WaitForSeconds(secondsBetweenLines);
-                }
-            } else {
-                _displaying = false;
-                if (numberOfLines > maxNumberOfLines) {
-                    // max 100 chars per line? doesn't need to be exact
-                    linesDisplayed = linesDisplayed.Substring(0, maxNumberOfLines * 100);
-                    numberOfLines = 0;
-                }
-                displayImmediately = false;
+            while (Time.time < endTime) {
+                if (DirectionUtil.FromInput() != Direction.None) break;
+                textbox.text = ApplyFade(line, Time.time-startTime) + "\n\n" + linesDisplayed;
                 yield return null;
             }
+
+            linesDisplayed = line + "\n\n"+ linesDisplayed;
+            textbox.text = linesDisplayed;
+            numberOfLines++;
+
+            // if there's additional line to display, wait
+            if (linesToDisplay.Count > 0) {
+                yield return new WaitForSeconds(secondsBetweenLines);
+            }
+        } else {
+            if (numberOfLines > maxNumberOfLines) {
+                // max 100 chars per line? doesn't need to be exact
+                linesDisplayed = linesDisplayed.Substring(0, maxNumberOfLines * 100);
+                numberOfLines = 0;
+            }
+            yield return null;
         }
     }
 
@@ -102,12 +93,6 @@ public class Teleprompter : MonoBehaviour {
             color.g.ToString("X2") + color.b.ToString("X2") +
             color.a.ToString("X2");
 	    return hex;
-    }
-
-    public bool displaying {
-        get {
-            return _displaying;
-        }
     }
 }
 }

@@ -15,6 +15,9 @@ public class NetworkGame : MonoBehaviour {
     const float CAPTURE_DISTANCE = 0.1f;
     static float[] LENGTHS = {1, 1, 1, 1};
 
+    const int fogDistance = 4;
+    const int revealDistance = 2;
+
     /** Units **/
     const float PLAYER_SPEED = 1f;
     const float ENEMY_MIN_SPEED = 1f;
@@ -26,28 +29,25 @@ public class NetworkGame : MonoBehaviour {
     /** Additional Game States **/
     const int NUMBER_OF_DAYS = 4;
     const int NUMBER_OF_GEMS = 3;
-    const int NUMBER_OF_STEPS_PER_DAY = 21;
+    const int NUMBER_OF_STEPS_PER_DAY = 20;
 
 
     /***** PUBLIC: VARIABLES *****/
     public Text statusTextbox;
     public Teleprompter teleprompter;
+    public WorldRenderer worldRenderer;
 
 
     /***** PRIVATE: VARIABLES *****/
     World world;
+    StoryMachine story;
 
     /** Game status **/
-    int num_enemies = START_ENEMY_COUNT;
     int steps;
     int day;
 
-    /** Graph **/
-    WorldRenderer worldRenderer;
-
     /** Units **/
     Player player;
-    List<Enemy> enemies;
 
     /** Town **/
     List<Artifact> artifacts;
@@ -66,30 +66,32 @@ public class NetworkGame : MonoBehaviour {
             Setup();
             UpdateStatusBoard();
 
-            player.EncounterNewDay(day);
+            yield return StartCoroutine(story.StoryForDay(day));
+
+            ModifyVisibility();
+            worldRenderer.RenderWorld(world);
 
             do {
                 yield return StartCoroutine(PlayTurn());
-                UpdateStatusBoard();
-            } while (!(PlayerIsDead() || WonLevel()));
+                steps++;
 
-            player.EncounterNewTile(NUMBER_OF_STEPS_PER_DAY - steps);
-            ShowResult();
+                var artifact = PickUpArtifact();
+                ModifyVisibility();
+                worldRenderer.RenderWorld(world);
 
-            if (WonLevel()) {
-                MadeItBack();
-                UpdateStatusBoard();
-                player.EncounterNewDay(day+1);
-                //yield return StartCoroutine(ScheherazadeSpeaks());
-                IncreaseDifficulty();
-            } else {
-                UpdateStatusBoard();
-                ResetDifficulty();
-                player.EncounterNewDay(day+1);
-            }
+                yield return StartCoroutine(
+                        story.StoryForTurn(
+                            tile:PlayerPositionToTile(),
+                            visibleTiles:world.NearbyTiles(player.origin, fogDistance, fogDistance).ToArray(),
+                            artifactCollected: artifact,
+                            stepsLeft: NUMBER_OF_STEPS_PER_DAY-steps));
+            } while (!IsEndOfDay());
+
+            //yield return StartCoroutine(ScheherazadeSpeaks());
+            day++;
+            steps = 0;
         }
     }
-
 
     /***** SETUP *****/
     void Setup() {
@@ -140,77 +142,53 @@ public class NetworkGame : MonoBehaviour {
         new GameObject().AddComponent<UnitRenderer>().unit = player;
 
         /* Render Graph */
-        worldRenderer = new WorldRenderer();
         worldRenderer.RenderWorld(world);
+
+        story = new StoryMachine(player, world, teleprompter);
     }
 
 
     /***** PLAY LOGIC *****/
     IEnumerator PlayTurn() {
         /** Move Player **/
-        if (player.RestingAtVertex()) {
-            ModifyVisibility();
-            player.EncounterTile(PlayerPositionToLandmark());
-            //player.EncounterNewTile(NUMBER_OF_STEPS_PER_DAY - steps);
-            worldRenderer.RenderWorld(world);
-			while (DirectionUtil.FromInput() == Direction.None || teleprompter.displaying) {
-                if (DirectionUtil.FromInput() != Direction.None) teleprompter.DisplayImmediately();
-				yield return null;
-			}
-            steps++;
-            player.MoveToward(DirectionUtil.FromInput());
+        while (DirectionUtil.FromInput() == Direction.None) {
+            yield return null;
         }
-        player.Move(world, Time.deltaTime);
+        player.MoveToward(DirectionUtil.FromInput());
 
-        PickUpArtifact();
+        while (!player.RestingAtVertex()) {
+            player.Move(world, Time.deltaTime);
+            yield return null;
+        }
     }
 
     void ModifyVisibility() {
         // for each adjacent 3x3, make it visible
         // for each 5-3x5-3, make it grayed
         // rerender graph
-        foreach (var tile in world.GetAdjacentTiles(player.origin)) {
-            foreach (var tile2 in world.GetAdjacentTiles(tile.position)) {
-                if (tile2.visibility != Visibility.Revealed) tile2.visibility = Visibility.Grayed;
-            }
-            foreach (var tile2 in world.GetAdjacentTiles(tile.position)) {
-                if (tile2.visibility != Visibility.Revealed) tile2.visibility = Visibility.Grayed;
-            }
+        foreach (var tile in world.NearbyTiles(player.origin, fogDistance, fogDistance)) {
+            if (tile.visibility != Visibility.Revealed) tile.visibility = Visibility.Grayed;
         }
-        foreach (var tile in world.GetAdjacentTiles(player.origin)) {
+
+        foreach (var tile in world.NearbyTiles(player.origin, revealDistance, revealDistance)) {
             tile.visibility = Visibility.Revealed;
         }
     }
 
-    void PickUpArtifact() {
-        return;
-        for (int i = 0; i < artifacts.Count; i++) {
-            var artifact = artifacts[i];
-            if (Approx(artifact.position.ToVector(), player.position)) {
-                artifacts.RemoveAt(i);
-                var renderer = artifactRenderers[i];
-                Destroy(renderer.gameObject);
-                artifactRenderers.RemoveAt(i);
+    Artifact PickUpArtifact() {
+        for (int i = 0; i < world.visibleArtifacts.Count; i++) {
+            var artifact = world.visibleArtifacts[i];
+
+            if (player.RestingAtVertex() && artifact.position == player.origin) {
+                world.visibleArtifacts.RemoveAt(i);
                 player.inventory.Add(artifact);
-                return;
+                return artifact;
             }
         }
+        return null;
     }
 
     /***** SCHEHERAZADE *****/
-    IEnumerator ScheherazadeSpeaks() {
-        /*
-        speechTextbox.text = "";
-        yield return new WaitForSeconds(0.4f);
-        foreach (var line in DialogueSystem.DialogueForStage(day)) {
-            speechTextbox.text = line;
-            yield return new WaitForSeconds(SECONDS_BETWEEN_TEXT);
-        }
-        speechTextbox.text = "";
-        */
-        yield return null;
-    }
-
     void UpdateStatusBoard() {
         /*
         var location = "Path";
@@ -247,24 +225,6 @@ public class NetworkGame : MonoBehaviour {
         //town.gemsCollected += player.inventory.Count;
     }
 
-    void IncreaseDifficulty() {
-        SharedReset();
-        num_enemies += MORE_ENEMIES_PER_day;
-        day++;
-    }
-
-    void ResetDifficulty() {
-        SharedReset();
-        num_enemies = START_ENEMY_COUNT;
-        day++;
-    }
-
-    void SharedReset() {
-        player.NewDay();
-        steps = 0;
-    }
-
-
     /***** PROPERTIES - GAME STATUS *****/
     bool PlayerIsDead() {
         return false;
@@ -278,6 +238,10 @@ public class NetworkGame : MonoBehaviour {
         return false;
     }
 
+    bool IsEndOfDay() {
+        return NUMBER_OF_STEPS_PER_DAY - steps == 0;
+    }
+
     bool GemPickedUp() {
         return player.inventory.Count > 0;
     }
@@ -287,7 +251,15 @@ public class NetworkGame : MonoBehaviour {
     }
 
     TileType PlayerPositionToLandmark() {
-        return world.tiles[player.destination].type;
+        return world.tiles[player.origin].type;
+    }
+
+    Tile PlayerPositionToTile() {
+        return world.tiles[player.origin];
+    }
+
+    IEnumerable<Tile> VisibleTiles() {
+        return world.AdjacentTiles(player.origin);
     }
 
     bool PlayerInSafeZone() {

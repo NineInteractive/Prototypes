@@ -21,7 +21,7 @@ public class Tile {
 
 public enum TileType {
     // TODO landmark type?
-    Path, Blocked, Castle, Cave, Library, Tower
+    Path, Blocked, Castle, Cave, Library, Tower, Beacon, Arch
 }
 
 public class Landmark {
@@ -46,56 +46,6 @@ public class Landmark {
     }
 }
 
-// coordinate => landmark
-// landmark => coordinate? is this needed? otherwise we just - but how do we detect overlaps?
-// just by looking through the tiles. not sure if we really need the reverse mapping
-// now so let it go.
-public struct Selection {
-    public Coord bottomLeft;
-    public Coord topRight;
-
-    public Selection(Coord bl, Coord tr) {
-        bottomLeft = bl;
-        topRight = tr;
-    }
-
-    public static Selection RandomSelection(int width, int height, int maxX, int maxY) {
-        var bottomLeft = Coord.RandomCoord(maxX-width, maxY-height);
-        var topRight = bottomLeft.MovedBy(width, height);
-        return new Selection(bottomLeft, topRight);
-    }
-
-    // linq?
-    public IEnumerable<Coord> Coords() {
-        for (int i=bottomLeft.x; i<=topRight.x; i++) {
-            for (int j=bottomLeft.y; j<=topRight.y; j++) {
-                yield return new Coord(i, j);
-            }
-        }
-    }
-
-    public Coord RandomCoord() {
-        return Coord.RandomCoord(width, height).Plus(bottomLeft);
-    }
-
-    public int width {
-        get {
-            return topRight.x - bottomLeft.x;
-        }
-    }
-
-    public int height {
-        get {
-            return topRight.y - bottomLeft.y;
-        }
-    }
-
-    public override string ToString() {
-        return string.Format("Selection: {0}, {1}", bottomLeft, topRight);
-    }
-
-}
-
 public class World {
     const int WIDTH = 20;
     const int HEIGHT = 20;
@@ -108,6 +58,11 @@ public class World {
 
     /***** PRIVATE: VARIABLES *****/
     public Selection castle;
+
+    /** Artifacts **/
+    Dictionary<ArtifactType, Artifact> artifacts = new Dictionary<ArtifactType, Artifact>();
+    public List<Artifact> visibleArtifacts = new List<Artifact>();
+    public Dictionary<ArtifactType, Artifact> collectedArtifacts = new Dictionary<ArtifactType, Artifact>();
 
     /***** PUBLIC: STATIC METHODS *****/
     public void GenerateWorld() {
@@ -126,7 +81,8 @@ public class World {
         CreateLandmark(1, 1, TileType.Cave);
         CreateLandmark(2, 1, TileType.Library);
         CreateLandmark(1, 2, TileType.Tower);
-        // place gems
+
+        CreateArtifacts();
     }
 
     Selection CreateLandmark(int width, int height, TileType type) {
@@ -141,6 +97,19 @@ public class World {
         }
 
         return landmark;
+    }
+
+    void CreateArtifacts() {
+        artifacts[ArtifactType.Gem] = new Artifact(new Coord(3, 7), ArtifactType.Gem);
+        artifacts[ArtifactType.Cup] = new Artifact(new Coord(4, 8), ArtifactType.Cup);
+        artifacts[ArtifactType.Bow] = new Artifact(new Coord(5, 10), ArtifactType.Bow);
+        artifacts[ArtifactType.Mirror] = new Artifact(new Coord(8, 13), ArtifactType.Mirror);
+        artifacts[ArtifactType.PocketKnife] = new Artifact(new Coord(13, 2), ArtifactType.PocketKnife);
+        artifacts[ArtifactType.Arrow] = new Artifact(new Coord(5, 5), ArtifactType.Arrow);
+
+        visibleArtifacts.Add(artifacts[ArtifactType.Cup]);
+        visibleArtifacts.Add(artifacts[ArtifactType.Mirror]);
+        visibleArtifacts.Add(artifacts[ArtifactType.Arrow]);
     }
 
     bool Overlapped(Selection sel) {
@@ -174,8 +143,14 @@ public class World {
         }
     }
 
-    public IEnumerable<Tile> GetAdjacentTiles(Coord coord) {
+    public IEnumerable<Tile> AdjacentTiles(Coord coord) {
         foreach (var c in coord.AdjacentCoords(includeDiagonal:true, includeSelf:true)) {
+            if (tiles.ContainsKey(c)) yield return tiles[c];
+        }
+    }
+
+    public IEnumerable<Tile> NearbyTiles(Coord coord, int xdist, int ydist) {
+        foreach (var c in coord.NearbyCoords(xdist, ydist, maxX:WIDTH, maxY: HEIGHT, includeSelf:true)) {
             if (tiles.ContainsKey(c)) yield return tiles[c];
         }
     }

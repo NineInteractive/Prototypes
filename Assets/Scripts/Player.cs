@@ -38,7 +38,7 @@ public class Player : Unit {
     }
 
     public void NewDay() {
-        inventory.Clear();
+        //inventory.Clear();
     }
 
     public void EncounterNewDay(int day) {
@@ -163,7 +163,7 @@ public class Player : Unit {
         }
     }
 
-    public void EncounterNewTile(int stepsLeft) {
+    public void EncounterTurnsLeft(int stepsLeft) {
         switch (stepsLeft) {
             case 20:
                 Say("You head out with a little bit of hope.");
