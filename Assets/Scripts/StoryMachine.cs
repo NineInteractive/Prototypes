@@ -10,23 +10,33 @@ namespace NetworkGame {
 public class StoryMachine {
     Player player;
     World world;
-    Teleprompter tele;
+    Teleprompter sideTele; // aside
+    Teleprompter fullTele; // full screen
+    ScreenFader fader;
 
-    // TODO remove teleprompter dependency
-    public StoryMachine(Player player, World world, Teleprompter tele) {
+    public StoryMachine(Player player, World world, Teleprompter sideTele, Teleprompter fullTele, ScreenFader fader) {
         this.player = player;
         this.world = world;
-        this.tele = tele;
+        this.sideTele = sideTele;
+        this.fullTele = fullTele;
+        this.fader = fader;
     }
 
     public IEnumerator StoryForDay(int day) {
+        // fade to black
+
+        var x = fader.FadeOut(4);
+        while (x.MoveNext()) {
+            yield return null;
+        }
+
         var text = new string[]{};
         switch (day) {
             case 0:
                 text = new[]
-                {"Scheherazade stands in the middle of the courtyard.",
-                 "\"It's morning. I must go to sleep.\"",
-                 "She won't look at you."};
+                {"Scheherazade stands in the middle of the courtyard with lifeless eyes.",
+                 "You stare at her hopelessly, wondering if she would say another word to finish her hanging thought-",
+                 "But as always, the morning overtakes her and she remains silent."};
                 break;
 
             case 1:
@@ -45,7 +55,17 @@ public class StoryMachine {
             default:
                 break;
         }
-        yield return DisplayText(text);
+        yield return DisplayText(text, fullTele, true);
+
+        yield return new WaitForSeconds(2);
+
+        fullTele.Clear();
+
+        x = fader.FadeIn(4);
+        while (x.MoveNext()) {
+            yield return null;
+        }
+
     }
 
     public IEnumerator StoryForTurn(
@@ -53,14 +73,14 @@ public class StoryMachine {
             Tile[] visibleTiles,
             Artifact artifactCollected,
             int stepsLeft) {
-        yield return DisplayText(TaleForTilesVisible(visibleTiles));
-        yield return DisplayText(TaleForOccupyingTile(tile));
-        yield return DisplayText(TaleForCollectedArtifact(artifactCollected));
-        yield return DisplayText(TaleForNumberOfStepsLeft(stepsLeft));
+        yield return DisplayText(TaleForTilesVisible(visibleTiles), sideTele);
+        yield return DisplayText(TaleForOccupyingTile(tile), sideTele);
+        yield return DisplayText(TaleForCollectedArtifact(artifactCollected), sideTele);
+        yield return DisplayText(TaleForNumberOfStepsLeft(stepsLeft), sideTele);
     }
 
-    public IEnumerator DisplayText(string[] text) {
-        yield return tele.DisplayLines(text);
+    public IEnumerator DisplayText(string[] text, Teleprompter teleprompter, bool clearBetweenLines = false) {
+        yield return teleprompter.DisplayLines(text, clearBetweenLines);
     }
 
     /***** PRIVATE: Story Fragments *****/

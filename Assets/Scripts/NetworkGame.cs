@@ -34,7 +34,8 @@ public class NetworkGame : MonoBehaviour {
 
     /***** PUBLIC: VARIABLES *****/
     public Text statusTextbox;
-    public Teleprompter teleprompter;
+    public Teleprompter sideTele;
+    public Teleprompter fullScreenTele;
     public WorldRenderer worldRenderer;
 
 
@@ -99,9 +100,6 @@ public class NetworkGame : MonoBehaviour {
         foreach (var ur in GameObject.FindObjectsOfType<UnitRenderer>()) {
             Destroy(ur.gameObject);
         }
-        foreach (var ur in GameObject.FindObjectsOfType<RectRenderer>()) {
-            Destroy(ur.gameObject);
-        }
 
         /* Create Town */
         if (world == null) {
@@ -109,34 +107,8 @@ public class NetworkGame : MonoBehaviour {
             world.GenerateWorld();
         }
 
-        /* Create Gem: possible to be run multiple times */
-        /*
-        artifacts = new List<Artifact>();
-        artifactRenderers = new List<RectRenderer>();
-
-        var gemPosition = Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true);
-        var cupPosition = Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true);
-        var arrowPosition = Coord.RandomCoord(WIDTH+1, HEIGHT+1, occupied, true);
-
-        artifacts.Add(new Artifact(gemPosition, ArtifactType.Gem));
-        artifacts.Add(new Artifact(cupPosition, ArtifactType.Cup));
-        artifacts.Add(new Artifact(arrowPosition, ArtifactType.Arrow));
-
-        foreach (var artifact in artifacts) {
-            artifactRenderers.Add(ShapeGOFactory.InstantiateRect(
-                    new RectProperty(
-                        center: artifact.position.ToVector(),
-                        width: 0.2f,
-                        height: 0.2f,
-                        color: Color.red,
-                        angle: 45,
-                        layer: -2
-                    )));
-        }
-        */
-
         /* Create Units */
-        player = new Player(world.centerCoord, PLAYER_SPEED, teleprompter);
+        player = new Player(world.centerCoord, PLAYER_SPEED);
 
         /* Create Unit Renderers */
         new GameObject().AddComponent<UnitRenderer>().unit = player;
@@ -144,7 +116,13 @@ public class NetworkGame : MonoBehaviour {
         /* Render Graph */
         worldRenderer.RenderWorld(world);
 
-        story = new StoryMachine(player, world, teleprompter);
+        story = new StoryMachine(player, world, sideTele, fullScreenTele, ScreenFader.instance);
+    }
+
+    IEnumerator NightScene() {
+        // Fade to black
+        // Use full-screen sideTele to display text
+        yield return StartCoroutine(story.StoryForDay(day));
     }
 
 
@@ -163,9 +141,6 @@ public class NetworkGame : MonoBehaviour {
     }
 
     void ModifyVisibility() {
-        // for each adjacent 3x3, make it visible
-        // for each 5-3x5-3, make it grayed
-        // rerender graph
         foreach (var tile in world.NearbyTiles(player.origin, fogDistance, fogDistance)) {
             if (tile.visibility != Visibility.Revealed) tile.visibility = Visibility.Grayed;
         }

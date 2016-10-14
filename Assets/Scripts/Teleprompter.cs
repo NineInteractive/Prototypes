@@ -25,20 +25,25 @@ public class Teleprompter : MonoBehaviour {
         textbox = GetComponent<Text>();
         textbox.supportRichText = true;
         textbox.color = endColor;
-        StartCoroutine(Roll());
     }
 
-    public IEnumerator DisplayLines(params string[] lines) {
+    public IEnumerator DisplayLines(string[] lines, bool clearBetweenLines) {
         if (lines == null) lines = new string[]{};
 
         foreach (var line in lines) {
             linesToDisplay.Enqueue(line);
         }
-        yield return StartCoroutine(Roll());
+        yield return StartCoroutine(Roll(clearBetweenLines));
     }
 
-    IEnumerator Roll() {
-        if (linesToDisplay.Count > 0) {
+    public void Clear() {
+        linesDisplayed = "";
+        textbox.text = "";
+        numberOfLines = 0;
+    }
+
+    IEnumerator Roll(bool clearBetweenLines) {
+        while (linesToDisplay.Count > 0) {
             var line = linesToDisplay.Dequeue();
 
             float startTime = Time.time;
@@ -57,8 +62,11 @@ public class Teleprompter : MonoBehaviour {
             // if there's additional line to display, wait
             if (linesToDisplay.Count > 0) {
                 yield return new WaitForSeconds(secondsBetweenLines);
+                if (clearBetweenLines) Clear();
             }
-        } else {
+        }
+        /*
+        else {
             if (numberOfLines > maxNumberOfLines) {
                 // max 100 chars per line? doesn't need to be exact
                 linesDisplayed = linesDisplayed.Substring(0, maxNumberOfLines * 100);
@@ -66,6 +74,8 @@ public class Teleprompter : MonoBehaviour {
             }
             yield return null;
         }
+
+        */
     }
 
     string ApplyFade(string line, float dtime) {
