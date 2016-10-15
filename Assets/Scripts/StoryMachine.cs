@@ -7,19 +7,19 @@ using Nine;
 
 namespace NetworkGame {
 
-public class StoryMachine {
+public class StoryMachine : MonoBehaviour {
+    public ScreenFader fader;
+    public Teleprompter sideTele; // aside
+    public Teleprompter fullTele; // full screen
+    public Color dayFade;
+    public Color nightFade;
+
     Player player;
     World world;
-    Teleprompter sideTele; // aside
-    Teleprompter fullTele; // full screen
-    ScreenFader fader;
 
-    public StoryMachine(Player player, World world, Teleprompter sideTele, Teleprompter fullTele, ScreenFader fader) {
+    public void SetStoryObjects(Player player, World world) {
         this.player = player;
         this.world = world;
-        this.sideTele = sideTele;
-        this.fullTele = fullTele;
-        this.fader = fader;
     }
 
     public IEnumerator StoryForDay(int day) {
@@ -34,14 +34,16 @@ public class StoryMachine {
         switch (day) {
             case 0:
                 text = new[]
-                {"Scheherazade stands in the middle of the courtyard with lifeless eyes.",
+                {"The Nine Hundred and Ninety Seventh Night",
+                 "Scheherazade stands in the middle of the courtyard with lifeless eyes.",
                  "You stare at her hopelessly, wondering if she would say another word to finish her hanging thought-",
                  "But as always, the morning overtakes her and she remains silent."};
                 break;
 
             case 1:
                 text = new[]
-                {"Scheherazade stands in the middle of the courtyard.",
+                {"The Nine Hundred and Ninety Eighth Night",
+                 "Scheherazade stands in the middle of the courtyard.",
                  "\"It's morning. I must go to sleep.\"",
                  "She won't look at you."};
                 break;
@@ -61,11 +63,13 @@ public class StoryMachine {
 
         fullTele.Clear();
 
+
         x = fader.FadeIn(4);
         while (x.MoveNext()) {
             yield return null;
         }
 
+        yield return DisplayText(new[] {"The Nine Hundred and Ninety Eighth Day"}, fullTele, true);
     }
 
     public IEnumerator StoryForTurn(

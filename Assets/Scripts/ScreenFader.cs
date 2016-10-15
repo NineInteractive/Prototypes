@@ -13,17 +13,24 @@ public class ScreenFader : MonoBehaviour {
         if (instance == null) {
             DontDestroyOnLoad(transform.gameObject);
             instance = this;
-            /*
-            if (fadeIn) {
-                fadeImg.color = new Color(fadeImg.color.r, fadeImg.color.g, fadeImg.color.b, 1.0f);
-            }
-            */
         } else {
             Destroy(transform.gameObject);
         }
     }
 
     void OnEnable() { }
+
+    public IEnumerator FadeToColor(Color targetColor, float fadeDuration) {
+        var startTime = Time.time;
+        var endTime = fadeDuration + startTime;
+        while (Time.time < endTime) {
+            fadeImg.color = new Color(targetColor.r,
+                    targetColor.g,
+                    targetColor.b,
+                    (Time.time-startTime)/fadeDuration);
+            yield return null;
+        }
+    }
 
     public IEnumerator FadeIn(float fadeDuration) {
         //fadeImg.gameObject.SetActive(true);

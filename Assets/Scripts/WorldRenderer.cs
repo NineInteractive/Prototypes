@@ -55,8 +55,8 @@ public class WorldRenderer : MonoBehaviour {
 
     RectProperty RectPropertyFromTile(Tile tile) {
         Vector2 center = tile.position.ToVector() * TILE_SCALE;
-        float length = TILE_SCALE * 0.8f;
-        float width = TILE_SCALE * 0.8f;
+        float length = TILE_SCALE * 0.5f;
+        float width = TILE_SCALE * 0.5f;
 
         var color = Color.white;
         switch (tile.type) {
@@ -85,11 +85,15 @@ public class WorldRenderer : MonoBehaviour {
                 color.a = 0;
                 break;
             case Visibility.Grayed:
-                color.a = 0.03f;
+                if (tile.type == TileType.Blocked) {
+                    color.a = 1;
+                } else {
+                    color.a = 0.03f;
+                }
                 break;
             case Visibility.Revealed:
                 if (tile.type == TileType.Blocked) {
-                    color.a = 0;
+                    color.a = 1;
                 } else {
                     color.a = 1;
                 }

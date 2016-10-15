@@ -41,7 +41,7 @@ public class NetworkGame : MonoBehaviour {
 
     /***** PRIVATE: VARIABLES *****/
     World world;
-    StoryMachine story;
+    public StoryMachine story;
 
     /** Game status **/
     int steps;
@@ -116,7 +116,7 @@ public class NetworkGame : MonoBehaviour {
         /* Render Graph */
         worldRenderer.RenderWorld(world);
 
-        story = new StoryMachine(player, world, sideTele, fullScreenTele, ScreenFader.instance);
+        story.SetStoryObjects(player, world);
     }
 
     IEnumerator NightScene() {
