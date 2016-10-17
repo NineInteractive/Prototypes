@@ -17,6 +17,12 @@ public class Tile {
         this.type = type;
         visibility = vis;
     }
+
+    public bool Blocked {
+        get {
+            return type == TileType.Blocked;
+        }
+    }
 }
 
 public enum TileType {
@@ -47,8 +53,8 @@ public class Landmark {
 }
 
 public class World {
-    const int WIDTH = 20;
-    const int HEIGHT = 20;
+    public const int WIDTH = 20;
+    public const int HEIGHT = 20;
 
     /***** PUBLIC: VARIABLES *****/
     public IntRange numberOfBlocks = new IntRange(40, 40);

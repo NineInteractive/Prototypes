@@ -13,6 +13,7 @@ public class StoryMachine : MonoBehaviour {
     public Teleprompter fullTele; // full screen
     public Color dayFade;
     public Color nightFade;
+    public Color transparent;
 
     Player player;
     World world;

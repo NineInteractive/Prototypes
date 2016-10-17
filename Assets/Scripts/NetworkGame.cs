@@ -15,8 +15,8 @@ public class NetworkGame : MonoBehaviour {
     const float CAPTURE_DISTANCE = 0.1f;
     static float[] LENGTHS = {1, 1, 1, 1};
 
-    const int fogDistance = 4;
-    const int revealDistance = 2;
+    const int fogDistance = 2;
+    const int revealDistance = 1;
 
     /** Units **/
     const float PLAYER_SPEED = 1f;
