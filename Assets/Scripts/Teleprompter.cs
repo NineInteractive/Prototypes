@@ -50,7 +50,7 @@ public class Teleprompter : MonoBehaviour {
             float endTime = startTime + line.Length / charactersPerSecond;
 
             while (Time.time < endTime) {
-                if (DirectionUtil.FromInput() != Direction.None) break;
+                if (Skip()) break;
                 textbox.text = ApplyFade(line, Time.time-startTime) + "\n\n" + linesDisplayed;
                 yield return null;
             }
@@ -61,7 +61,12 @@ public class Teleprompter : MonoBehaviour {
 
             // if there's additional line to display, wait
             if (linesToDisplay.Count > 0) {
-                yield return new WaitForSeconds(secondsBetweenLines);
+                if (Skip()) {
+                    // barely wait
+                    yield return new WaitForSeconds(secondsBetweenLines/2f);
+                } else {
+                    yield return new WaitForSeconds(secondsBetweenLines);
+                }
                 if (clearBetweenLines) Clear();
             }
         }
@@ -76,6 +81,10 @@ public class Teleprompter : MonoBehaviour {
         }
 
         */
+    }
+
+    bool Skip() {
+        return Input.anyKeyDown;
     }
 
     string ApplyFade(string line, float dtime) {

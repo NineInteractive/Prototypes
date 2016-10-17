@@ -71,6 +71,7 @@ public class NetworkGame : MonoBehaviour {
 
             ModifyVisibility();
             worldRenderer.RenderWorld(world);
+            //GetComponent<Camera>().transform.position = GetComponent<Camera>().transform.position.SwapX(player.position.x).SwapY(player.position.y);
 
             do {
                 yield return StartCoroutine(PlayTurn());
@@ -109,9 +110,7 @@ public class NetworkGame : MonoBehaviour {
 
         /* Create Units */
         player = new Player(world.centerCoord, PLAYER_SPEED);
-
-        /* Create Unit Renderers */
-        new GameObject().AddComponent<UnitRenderer>().unit = player;
+        worldRenderer.SetupPlayerRenderer(player);
 
         /* Render Graph */
         worldRenderer.RenderWorld(world);
@@ -128,6 +127,7 @@ public class NetworkGame : MonoBehaviour {
 
     /***** PLAY LOGIC *****/
     IEnumerator PlayTurn() {
+        GetComponent<Camera>().transform.position = GetComponent<Camera>().transform.position.SwapX(player.position.x * 1.5f).SwapY(player.position.y * 1.5f) + new Vector3(1.5f, 0, 0);
         /** Move Player **/
         while (DirectionUtil.FromInput() == Direction.None) {
             yield return null;
@@ -136,6 +136,7 @@ public class NetworkGame : MonoBehaviour {
 
         while (!player.RestingAtVertex()) {
             player.Move(world, Time.deltaTime);
+            GetComponent<Camera>().transform.position = GetComponent<Camera>().transform.position.SwapX(player.position.x * 1.5f).SwapY(player.position.y * 1.5f) + new Vector3(1.5f, 0, 0);
             yield return null;
         }
     }

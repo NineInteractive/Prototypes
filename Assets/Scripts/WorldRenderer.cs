@@ -25,6 +25,12 @@ public class WorldRenderer : MonoBehaviour {
 
     public WorldRenderer() { }
 
+
+    public void SetupPlayerRenderer(Player player) {
+        /* Create Unit Renderers */
+        new GameObject().AddComponent<UnitRenderer>().unit = player;
+    }
+
     public void RenderWorld(World world) {
         // render tiles
         foreach (var pair in world.tiles) {
