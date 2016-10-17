@@ -109,7 +109,7 @@ public class NetworkGame : MonoBehaviour {
         }
 
         /* Create Units */
-        player = new Player(world.centerCoord, PLAYER_SPEED);
+        player = new Player(world.castle.RandomCoord(), PLAYER_SPEED);
         worldRenderer.SetupPlayerRenderer(player);
 
         /* Render Graph */
@@ -132,7 +132,7 @@ public class NetworkGame : MonoBehaviour {
         while (DirectionUtil.FromInput() == Direction.None) {
             yield return null;
         }
-        player.MoveToward(DirectionUtil.FromInput());
+        player.MoveToward(world, DirectionUtil.FromInput());
 
         while (!player.RestingAtVertex()) {
             player.Move(world, Time.deltaTime);
@@ -207,7 +207,7 @@ public class NetworkGame : MonoBehaviour {
     }
 
     bool WonLevel() {
-        if ((!PlayerIsDead() && GemPickedUp() && PlayerInLandmark(TileType.Castle))
+        if ((!PlayerIsDead() && GemPickedUp() && PlayerInLandmark(TileType.Palace))
             || NUMBER_OF_STEPS_PER_DAY - steps == 0) {
             return true;
         }

@@ -45,7 +45,7 @@ public class WorldRenderer : MonoBehaviour {
                 caption.transform.parent = renderer.transform;
                 caption.transform.localPosition = new Vector3(tileSideLength/2f, -tileSideLength/2f, -5);
                 caption.text = tile.type.ToString();
-                if (tile.type== TileType.Blocked) {
+                if (!tile.Rendered) {
                     caption.color = new Color32(0,0,0,0);
                 }
                 captionDict[coord] = caption;
@@ -81,12 +81,12 @@ public class WorldRenderer : MonoBehaviour {
                 var cRight = new Coord(i+1, j);
 
                 Tile tile, tileAbove, tileRight;
-                if (world.tiles.TryGetValue(c, out tile) && !tile.Blocked) {
-                    if (world.tiles.TryGetValue(cAbove, out tileAbove) && !tileAbove.Blocked) {
+                if (world.tiles.TryGetValue(c, out tile) && !tile.Impassable) {
+                    if (world.tiles.TryGetValue(cAbove, out tileAbove) && !tileAbove.Impassable) {
                         var r = ShapeGOFactory.InstantiateRect(RectPropertyForLink(tile, tileAbove));
                         r.transform.parent = transform;
                     }
-                    if (world.tiles.TryGetValue(cRight, out tileRight) && !tileRight.Blocked) {
+                    if (world.tiles.TryGetValue(cRight, out tileRight) && !tileRight.Impassable) {
                         var r = ShapeGOFactory.InstantiateRect(RectPropertyForLink(tile, tileRight));
                         r.transform.parent = transform;
                     }
@@ -126,7 +126,7 @@ public class WorldRenderer : MonoBehaviour {
 
         BorderProperty bp = new BorderProperty();
 
-        if (tile.type != TileType.Blocked) {
+        if (tile.Rendered) {
             bp = new BorderProperty(style: BorderStyle.Solid, color: Color.black, thickness:borderThickness);
         }
 
@@ -159,14 +159,14 @@ public class WorldRenderer : MonoBehaviour {
                 color.a = 0;
                 break;
             case Visibility.Grayed:
-                if (tile.type == TileType.Blocked) {
+                if (!tile.Rendered) {
                     color.a = 0;
                 } else {
                     color.a = 0.03f;
                 }
                 break;
             case Visibility.Revealed:
-                if (tile.type == TileType.Blocked) {
+                if (!tile.Rendered) {
                     color.a = 0;
                 } else {
                     color.a = 1;

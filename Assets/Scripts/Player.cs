@@ -14,8 +14,12 @@ public class Player : Unit {
     public Player(Vector2 c, float speed): this(new Coord(c.x, c.y), speed) {}
     public Player(Coord c, float speed) : base(c, speed) { }
 
-    public void MoveToward(Direction dir) {
-        destination = FindNextDestination(origin, dir);
+    public void MoveToward(World world, Direction dir) {
+        var target = FindNextDestination(origin, dir);
+
+        if (world.tiles.ContainsKey(target) && !world.tiles[target].Impassable) {
+            destination = target;
+        }
     }
 
     public override void Move(World world, float deltaTime) {

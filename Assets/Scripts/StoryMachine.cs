@@ -141,7 +141,7 @@ public class StoryMachine : MonoBehaviour {
                 return new[] {"The cave is empty."};
                 break;
 
-            case TileType.Castle:
+            case TileType.Palace:
                 return new[] {"The cave is empty."};
                 break;
 
