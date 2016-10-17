@@ -173,7 +173,7 @@ public class World {
         for (int i = 0; i < WIDTH; i++) {
             for (int j = 0; j < HEIGHT; j++) {
                 var c = new Coord(i, j);
-                tiles[c] = new Tile(c, (TileType)map[i,HEIGHT-j-1]);
+                tiles[c] = new Tile(c, (TileType)map[HEIGHT-j-1, i]);
             }
         }
     }
