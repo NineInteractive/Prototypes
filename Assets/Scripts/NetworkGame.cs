@@ -15,8 +15,8 @@ public class NetworkGame : MonoBehaviour {
     const float CAPTURE_DISTANCE = 0.1f;
     static float[] LENGTHS = {1, 1, 1, 1};
 
-    const int fogDistance = 2;
-    const int revealDistance = 1;
+    const int fogDistance = 0;
+    const int revealDistance = 0;
 
     /** Units **/
     const float PLAYER_SPEED = 1f;
@@ -71,6 +71,7 @@ public class NetworkGame : MonoBehaviour {
 
             ModifyVisibility();
             worldRenderer.RenderWorld(world);
+            worldRenderer.SetupPlayerRenderer(player);
             //GetComponent<Camera>().transform.position = GetComponent<Camera>().transform.position.SwapX(player.position.x).SwapY(player.position.y);
 
             do {
@@ -110,10 +111,9 @@ public class NetworkGame : MonoBehaviour {
 
         /* Create Units */
         player = new Player(world.castle.RandomCoord(), PLAYER_SPEED);
-        worldRenderer.SetupPlayerRenderer(player);
 
         /* Render Graph */
-        worldRenderer.RenderWorld(world);
+//        worldRenderer.RenderWorld(world);
 
         story.SetStoryObjects(player, world);
     }

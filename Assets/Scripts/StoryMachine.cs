@@ -35,7 +35,8 @@ public class StoryMachine : MonoBehaviour {
         switch (day) {
             case 0:
                 text = new[]
-                {"The Nine Hundred and Ninety Seventh Night",
+                {"Illumination",
+                 "The Nine Hundred and Ninety Seventh Night",
                  "Scheherazade stands in the middle of the courtyard with lifeless eyes.",
                  "You stare at her hopelessly, wondering if she would say another word to finish her hanging thought-",
                  "But as always, the morning overtakes her and she remains silent."};
@@ -70,7 +71,7 @@ public class StoryMachine : MonoBehaviour {
             yield return null;
         }
 
-        yield return DisplayText(new[] {"The Nine Hundred and Ninety Eighth Day"}, fullTele, true);
+        yield return DisplayText(new[] {"The Nine Hundred and Ninety Eighth Day", ""}, fullTele, true);
     }
 
     public IEnumerator StoryForTurn(

@@ -6,7 +6,7 @@ namespace NetworkGame {
 
 public class Unit {
     /***** CONSTS *****/
-    const float SPEED_MULTIPLIER = 9;
+    const float SPEED_MULTIPLIER = 1;
     const float VERTEX_MARGIN = 0.01f;
 
 

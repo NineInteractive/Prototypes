@@ -11,9 +11,9 @@ public class UnitRenderer : MonoBehaviour {
     RectRenderer shapeRenderer;
 
     void Start() {
-        var color = Color.green;
-        var width = 0.2f;
-        var height = 0.2f;
+        var color = Color.black;
+        var width = 0.1f;
+        var height = 0.1f;
         var angle = 0f;
         /*
         if (unit is Player) {

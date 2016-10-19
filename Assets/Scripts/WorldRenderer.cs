@@ -181,8 +181,8 @@ public class WorldRenderer : MonoBehaviour {
 
     RectProperty RectPropertyFromArtifact(Artifact art) {
         Vector2 center = art.position.ToVector() * tileScale;
-        float length = tileScale * 0.2f;
-        float width = tileScale * 0.2f;
+        float length = tileScale * 0.0001f;
+        float width = tileScale * 0.0001f;
 
         var color = Color.red;
         /*Gem, Cup, Bow, Mirror, PocketKnife, Arrow
